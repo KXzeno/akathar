@@ -40,28 +40,31 @@ export const command = {
 			let [tempObj, validateRepeat] = [embed.data.fields ?? undefined, false];
 			console.log(tempObj);
 		 	tempObj !== undefined && tempObj.forEach(user => {
-		 		if (interaction.user.username === user.name) {
-		 			return validateRepeat = true;
-		 		}
-		 	});
+		 		if (i.user.username === user.name) {
+					return validateRepeat = true;
+				}
+			});
 
 			switch(i.customId) {
 				case 'join':
 					!validateRepeat
-						? +(async () => await i.update({
-							components: [new ActionRowBuilder().addComponents(join, finalize, cancel)],
-							embeds: [embed.addFields({name: `${interaction.user.username}`, value: `${interaction.user}`, inline: true})]
-						}))()
+						? +(async () => {
+							await i.update({
+								components: [new ActionRowBuilder().addComponents(join, finalize, cancel)],
+								embeds: [embed.addFields({name: `${i.user.username}`, value: `${i.user}`, inline: true})]
+							});
+							validateRepeat = false;
+						})()
 						: +(async () => {
 							validateRepeat = true; 
-							i.reply(`You already registered, ${interaction.user}`);
+							i.reply(`You already registered, ${i.user}`);
 						})();
 					break;
 				case 'cancel':
-					i.reply('Button `cancel` is currently featureless.');
+					i.reply('Button `Cancel` is currently featureless.');
 					break;
 				case 'finalize':
-					i.reply('Button `compile` is currently featureless.');
+					i.reply('Button `Compile` is currently featureless.');
 					break;
 			}
 		});
