@@ -37,10 +37,11 @@ export const command = {
 		let collector = res.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3_600_000 });
 		let users = {};
 
+		let randomize = (arr) => Math.floor(Math.random() * arr.length);
+
 		collector.on('collect', async i => {
 			let [tempObj, validateRepeat] = [embed.data.fields ?? undefined, false];
 
-			//console.log(tempObj);
 		 	tempObj !== undefined && tempObj.forEach(user => {
 		 		if (i.user.username === user.name) {
 					return validateRepeat = true;
@@ -70,14 +71,20 @@ export const command = {
 						})();
 					break;
 				case 'cancel':
-					i.reply('Button `Cancel` is currently featureless.');
-					console.log(users);
+					i.update('Operation cancelled.');
 					break;
 				case 'finalize':
-					i.reply('Button `Compile` is currently featureless.');
+					let fieldsArr = [...embed.data.fields.flatMap(({ name }) => !!name ? [`${name}`] : undefined)];
+					let reserveRandom;
 					tempObj.forEach(({ name }) => {
-						users[name].send('test');
+						// Handle case where user receives his own id
+						let filteredArr = fieldsArr.filter((str) => str !== users[name].username);
+						let assigned = filteredArr[randomize(filteredArr)];
+						console.log(fieldsArr, filteredArr, assigned);
+						users[name].send(`You've been assigned ${assigned}, enjoy.`);
+						filteredArr.shift();
 					});
+					i.reply('Names were directly sent to your PMs.');
 					break;
 			}
 		});
