@@ -71,7 +71,11 @@ export const command = {
 						})();
 					break;
 				case 'cancel':
-					i.update('Operation cancelled.');
+					i.update({
+						content: 'Operation Cancelled.',
+						components: [],
+						embeds: [],
+					});
 					break;
 				case 'finalize':
 					let fieldsArr = [...embed.data.fields.flatMap(({ name }) => !!name ? [`${name}`] : undefined)];
