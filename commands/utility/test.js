@@ -45,17 +45,25 @@ export const command = {
 		 		}
 		 	});
 
-			console.log(i);
-
-		 	!validateRepeat
-		 		? +(async () => await i.update({
-					components: [new ActionRowBuilder().addComponents(join, finalize, cancel)],
-					embeds: [embed.addFields({name: `${interaction.user.username}`, value: `${interaction.user}`, inline: true})]
-		 	}))()
-		 		: +(async () => {
-					validateRepeat = true; 
-					i.reply(`You already registered, ${interaction.user}`);
-				})();
-		 });
+			switch(i.customId) {
+				case 'join':
+					!validateRepeat
+						? +(async () => await i.update({
+							components: [new ActionRowBuilder().addComponents(join, finalize, cancel)],
+							embeds: [embed.addFields({name: `${interaction.user.username}`, value: `${interaction.user}`, inline: true})]
+						}))()
+						: +(async () => {
+							validateRepeat = true; 
+							i.reply(`You already registered, ${interaction.user}`);
+						})();
+					break;
+				case 'cancel':
+					i.reply('Button `cancel` is currently featureless.');
+					break;
+				case 'finalize':
+					i.reply('Button `compile` is currently featureless.');
+					break;
+			}
+		});
 	},
 };
