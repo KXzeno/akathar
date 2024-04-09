@@ -35,10 +35,12 @@ export const command = {
 		});
 
 		let collector = res.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3_600_000 });
+		let users = {};
 
 		collector.on('collect', async i => {
 			let [tempObj, validateRepeat] = [embed.data.fields ?? undefined, false];
-			console.log(tempObj);
+
+			//console.log(tempObj);
 		 	tempObj !== undefined && tempObj.forEach(user => {
 		 		if (i.user.username === user.name) {
 					return validateRepeat = true;
@@ -53,6 +55,13 @@ export const command = {
 								components: [new ActionRowBuilder().addComponents(join, finalize, cancel)],
 								embeds: [embed.addFields({name: `${i.user.username}`, value: `${i.user}`, inline: true})]
 							});
+							Object.defineProperties(users, {
+								[i.user.username]: {
+									value: i.user,
+									enumerable: true,
+								},
+							});
+
 							validateRepeat = false;
 						})()
 						: +(async () => {
@@ -62,9 +71,13 @@ export const command = {
 					break;
 				case 'cancel':
 					i.reply('Button `Cancel` is currently featureless.');
+					console.log(users);
 					break;
 				case 'finalize':
 					i.reply('Button `Compile` is currently featureless.');
+					tempObj.forEach(({ name }) => {
+						users[name].send('test');
+					});
 					break;
 			}
 		});
