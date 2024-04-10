@@ -10,6 +10,7 @@ export const command = {
 			.setTitle('Gift Exchange')
 			.setDescription('Participants:')
 			.setAuthor({ name: `Initiated by ${interaction.user.username}`, iconURL: `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}` })
+			.setThumbnail('https://media.giphy.com/media/5YrT02HhIpbiqFbF4j/giphy.gif')
 		;
 
 		const join = new ButtonBuilder()
@@ -73,6 +74,10 @@ export const command = {
 						})();
 					break;
 				case 'cancel':
+					if (i.user !== interaction.user) {
+						return i.reply({ content: 'Only the prompter may do this.', ephemeral: true });
+					}
+
 					i.update({
 						content: 'Operation Cancelled.',
 						components: [],
@@ -80,6 +85,10 @@ export const command = {
 					});
 					break;
 				case 'finalize':
+					if (i.user !== interaction.user) {
+						return i.reply({ content: 'Only the prompter may do this.', ephemeral: true });
+					}
+
 					let fieldsArr = [...embed.data.fields.flatMap(({ name }) => !!name ? [`${name}`] : undefined)];
 					if (fieldsArr.length < 2) {
 						return i.reply({ content: 'Cannot start with one user.', ephemeral: true });
