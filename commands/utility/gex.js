@@ -79,6 +79,10 @@ export const command = {
 					break;
 				case 'finalize':
 					let fieldsArr = [...embed.data.fields.flatMap(({ name }) => !!name ? [`${name}`] : undefined)];
+					if (fieldsArr.length < 2) {
+						return i.reply({ content: 'Cannot start with one user.', ephemeral: true });
+					}
+
 					tempObj.forEach(({ name }) => {
 						// Handle case where user receives his own id
 						let filteredArr = fieldsArr.filter((str) => str !== users[name].username);
