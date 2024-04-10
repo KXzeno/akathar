@@ -67,7 +67,7 @@ export const command = {
 						})()
 						: +(async () => {
 							validateRepeat = true; 
-							i.reply(`You already registered, ${i.user}`);
+							i.reply({ content: `You already registered, ${i.user}`, ephemeral: true});
 						})();
 					break;
 				case 'cancel':
@@ -84,7 +84,7 @@ export const command = {
 						let filteredArr = fieldsArr.filter((str) => str !== users[name].username);
 						let assigned = filteredArr[randomize(filteredArr)];
 						console.log(fieldsArr, filteredArr, assigned);
-						users[name].send(`You've been assigned ${assigned}, enjoy.`);
+						users[name].send(`You've been assigned ${assigned}`);
 						filteredArr.shift();
 					});
 					i.reply('Names were directly sent to your PMs.');
