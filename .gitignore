@@ -1,2 +1,7 @@
+# misc
 /node_modules
 .env
+
+# decision records
+/ADK/*/pdfs
+/ADK/*/logs
