@@ -8,7 +8,9 @@ export const command = {
 		let embed = new EmbedBuilder()
 			.setColor(0x0099FF)
 			.setTitle('Gift Exchange')
-			.setDescription('Participants:');
+			.setDescription('Participants:')
+			.setAuthor({ name: `Initiated by ${interaction.user.username}`, iconURL: `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}` })
+		;
 
 		const join = new ButtonBuilder()
 			.setCustomId('join')
