@@ -1,0 +1,104 @@
+\documentclass[7px]{article}
+
+\usepackage{preamble}
+\usepackage{adkore}
+
+\begin{document}
+\frontmatter
+{Feature}
+{Gift Exchange}
+{ON}
+{It would otherwise be tradition for one to spend his own participation and algorithmic acuity to forgo gift exchange events. This feature assumes the irreplaceability-convenience of virtual contact, as seamless anonymity can only exist in \textsl{raffling}. }
+
+\strategy
+% Core Decision
+{Implement an interaction for gift exchange events, such as \textsl{secret santa}.}
+% Prospects
+{
+  \begin{enumerate}
+    \item Asynchronous interaction handling mutliple users
+    \item[$\lJoin$] \textcolor[HTML]{B58B00}{Edge cases:}
+      \small{
+        \begin{itemize}[label=$\multimapdotinv$, leftmargin=1.7mm]
+          \item Not participating
+          \item Canceling
+          \item Interaction authority
+          \item Feedback on failed runtime, including unsuspecting mismatch
+        \end{itemize}
+      }
+    \item[$\Diamonddot$] \textcolor[HTML]{9457EB}{Integrity in algorithm}
+      \normalsize
+    \end{enumerate}
+}
+% Decision Parameters
+{
+  \begin{itemize}[label=\textsection]
+    \item {\textbf{Builders:}}
+      \small
+      \begin{itemize}[label=$\multimapdotinv$, leftmargin=3mm]
+        \item SlashComand builder for feature prompting
+        \item Button builder for choice-based interactions
+        \item ActionRow builder for joining btn components
+        \item Embed builder for asynchronous updates on active participants and randomization
+      \end{itemize}
+      \normalsize
+    \item \textbf{Filtration:}
+      \small 
+      \begin{itemize}[label=$\multimapdotinv$, leftmargin=3mm]
+        \item Parse interactions as objects
+        \item Flatten then transform object data via array flatmap with innate filtration
+      \end{itemize}
+      \normalsize
+    \item \textbf{Control: }
+      \small
+      \begin{itemize}[label=$\multimapdotinv$, leftmargin=3mm]
+        \item Store interaction user as variable
+          \begin{itemize}[label=\wr, leftmargin=1.7mm]
+            \footnotesize{
+              \item Restrict interaction privileges elsewho
+              }
+          \end{itemize}
+      \end{itemize}
+      \normalsize
+  \end{itemize}
+}
+% Zero Technical Debt Concerns
+{
+  \raggedright
+  \begin{itemize}[label=\blitzb]
+    \small
+    \item Anually-congruent matches
+    \item Inactive VPS
+  \end{itemize}
+}
+
+\deploy
+% Decision Process
+{
+  \begin{itemize}
+    \item[] \textcolor{red}{...}\textbf{\textsl{Builders}}
+    \item[] \textcolor{red}{...}\textbf{\textsl{Filtration}}
+    \item[] \textcolor{red}{...}\textbf{\textsl{Control}}
+  \end{itemize}
+}
+% Results and Conflicts
+{
+ \raggedright
+  \begin{tblr}{
+      colspec = {|X|X|}, width = \linewidth,
+      row{1-Z} = {font=\scriptsize}
+    }
+    { 
+      \begin{enumerate}
+        \item 
+      \end{enumerate}
+    } & {
+      \begin{enumerate}
+        \item
+      \end{enumerate}
+    } \\
+  \end{tblr}
+}
+
+\end{document}
+
