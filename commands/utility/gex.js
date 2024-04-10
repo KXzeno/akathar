@@ -79,7 +79,6 @@ export const command = {
 					break;
 				case 'finalize':
 					let fieldsArr = [...embed.data.fields.flatMap(({ name }) => !!name ? [`${name}`] : undefined)];
-					let reserveRandom;
 					tempObj.forEach(({ name }) => {
 						// Handle case where user receives his own id
 						let filteredArr = fieldsArr.filter((str) => str !== users[name].username);
