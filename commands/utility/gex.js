@@ -1,3 +1,4 @@
+import { scheduler } from 'node:timers/promises';
 import { ComponentType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } from 'discord.js';
 
 export const command = {
@@ -43,8 +44,16 @@ export const command = {
 			embeds: [embed]
 		});
 
-		let collector = res.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3_600_000 });
-		let users = {};
+		let collector = res.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3_600_000 }); //1 hour
+		let [users, fieldsArr, linkedUsers, validateList, validator] = [{}, [], {}, new Set(), new Map()];
+
+		async function updateLinkedUsers({ username }, matchedUser) {
+			validateList.add({ [username]: matchedUser });
+			Object.defineProperty(linkedUsers, username, {
+				value: matchedUser,
+				enumerable: true,
+			});
+		}
 
 		function getRandomIndex(arr) {
 			return Math.floor(Math.random() * arr.length);
@@ -116,22 +125,25 @@ export const command = {
 						return i.reply({ content: 'Only the prompter may do this.', ephemeral: true });
 					}
 
-					let fieldsArr = [...embed.data.fields.flatMap(({ name }) => !!name ? [`${name}`] : undefined)];
+					fieldsArr = [...embed.data.fields.flatMap(({ name }) => !!name ? [`${name}`] : undefined)];
 					let randomizedFieldsArr = randomizeArr(fieldsArr);
 
 					if (fieldsArr.length < 2) {
 						return i.reply({ content: 'Cannot start with one user.', ephemeral: true });
 					}
 
-					randomizedFieldsArr.forEach((name, i, names) => {
-						if (i === names.length - 1) {
-							return users[name].send(`You've been assigned ${randomizedFieldsArr[0]}`);
+					randomizedFieldsArr.forEach(async (name, index, names) => {
+						if (index === names.length - 1) {
+							let headUser = randomizedFieldsArr[0];
+							await updateLinkedUsers(users[name], headUser);
+							return users[name].send(`You've been assigned ${headUser}`);
 						}
-
-						users[name].send(`You've been assigned ${randomizedFieldsArr[i + 1]}`);
+						let assigned = randomizedFieldsArr[index + 1];
+						await updateLinkedUsers(users[name], assigned);
+						users[name].send(`You've been assigned ${assigned}`);
 					});
+
 					try {
-						//await i.deferReply()
 						await i.update({
 							components: [
 								new ActionRowBuilder().addComponents(
@@ -148,7 +160,29 @@ export const command = {
 					}
 					break;
 				case 'validate': 
-					i.reply('yo');
+					let validatePassed;
+					await i.deferReply()
+					// keys = values in Sets
+					for (let [,val] of validateList.entries()) {
+						let [fetchedKey, fetchedValue] = 
+							[Object.keys(val)[0], Object.values(val)[0]];
+						validatePassed = true;
+						validator.set(fetchedKey, fetchedValue);
+						await i.editReply(`Validating using Map and Set transformations...`);
+					}
+					//	let subset = new Set({[fetchedKey]: fetchedValue})
+					//	console.log(({[fetchedKey]: fetchedValue}).isSubsetOf(validateList));
+					if (validator.size !== validateList.size) { /*validateList.has({[fetchedKey]: fetchedValue*/
+						validatePassed = false;
+						let warningMsg = 'WARNING: Possibilty of mismatch, contact @kaeon_.'
+						console.log(validator.size, validateList.size);
+						await i.followUp(warningMsg);
+						await scheduler.wait(3_000);
+						return await i.editReply(`${warningMsg} Advanced exception handling has not yet been implemented.`);
+					}
+					await scheduler.wait(3_000)
+					validatePassed && await i.editReply('Success.');
+					break;
 			}
 		});
 	},
