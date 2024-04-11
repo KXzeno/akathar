@@ -161,6 +161,8 @@ export const command = {
 					break;
 				case 'validate': 
 					let validatePassed;
+					let validatedUsers = [];
+					let defaultMsg = 'Validating using Map and Set transformations...\n';
 					await i.deferReply()
 					// keys = values in Sets
 					for (let [,val] of validateList.entries()) {
@@ -168,7 +170,9 @@ export const command = {
 							[Object.keys(val)[0], Object.values(val)[0]];
 						validatePassed = true;
 						validator.set(fetchedKey, fetchedValue);
-						await i.editReply(`Validating using Map and Set transformations...`);
+						validatedUsers.push(`${fetchedValue} :dart:\n`);
+						await scheduler.wait(2_000);
+						await i.editReply(defaultMsg + validatedUsers.toString().replaceAll(',',''));
 					}
 					//	let subset = new Set({[fetchedKey]: fetchedValue})
 					//	console.log(({[fetchedKey]: fetchedValue}).isSubsetOf(validateList));
@@ -181,7 +185,8 @@ export const command = {
 						return await i.editReply(`${warningMsg} Advanced exception handling has not yet been implemented.`);
 					}
 					await scheduler.wait(3_000)
-					validatePassed && await i.editReply('Success.');
+console.log(validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString());
+					validatePassed && await i.editReply(`${defaultMsg}${validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString().replaceAll(',','')}\nSuccess. *Note: this is an alphabetical sort and is not related at all to how you were matched. Stay frosty.*`);
 					break;
 			}
 		});
