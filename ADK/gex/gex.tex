@@ -69,6 +69,7 @@
     \small
     \item Anually-congruent matches
     \item Inactive VPS
+    \item Serverless analytics
   \end{itemize}
 }
 
@@ -81,6 +82,11 @@
     \item[] \textcolor{red}{...}\textbf{\textsl{Control}}
     \item Separate randomization and user response concerns
     \item Disable buttons and send confirmation concomitantly via promise
+    \item No database $\rightarrow$ used client-side validation
+      \begin{itemize}
+        \item Simultaneously stored matches via Map and Set objects
+        \item Compared map and set to validate uniqueness
+      \end{itemize}
   \end{itemize}
 }
 % Results and Conflicts
