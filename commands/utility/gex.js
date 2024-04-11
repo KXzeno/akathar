@@ -240,9 +240,18 @@ export const command = {
 						validatePassed = true;
 						validator.set(fetchedKey, fetchedValue);
 						validatedUsers.push(`${fetchedValue} :dart:\n`);
-						await scheduler.wait(2_000);
-						await i.editReply(defaultMsg + validatedUsers.toString().replaceAll(',',''));
+
+						if (validateList.size === validator.size) {
+							let sortedList = validatedUsers.sort((prev, next) => prev.localeCompare(next));
+							sortedList.forEach(async (name, index, list) => { 
+								let newList = await list.toSpliced(0, index).toString().replaceAll(',','');
+								await scheduler.wait(2000);
+								await i.editReply(`${defaultMsg}${newList}`);
+							});
+						}
 					}
+					
+
 					//	let subset = new Set({[fetchedKey]: fetchedValue})
 					//	console.log(({[fetchedKey]: fetchedValue}).isSubsetOf(validateList));
 					if (validator.size !== validateList.size) { /*validateList.has({[fetchedKey]: fetchedValue*/
