@@ -229,7 +229,6 @@ export const command = {
 					 * @returns {} Validation response || Error msg indicating mismatch
 					 * @author Kx
 					 */
-
 					let validatePassed;
 					let validatedUsers = [];
 					let defaultMsg = 'Validating using Map and Set transformations...\n';
@@ -256,7 +255,7 @@ export const command = {
 					}
 					await scheduler.wait(3_000)
 					console.log(validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString());
-					validatePassed && await i.editReply(`${defaultMsg}${validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString().replaceAll(',','')}\nSuccess. *Note: this is an alphabetical sort and is not related at all to how you were matched. Stay frosty.*`);
+					validatePassed && await i.editReply(`${defaultMsg}${validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString().replaceAll(',','')}\n## Success.\n*Note: this is an alphabetical sort and is not related at all to how you were matched.\nYou may follow or leave criticisms on the code logic [here](https://gist.github.com/KXzeno/5bda204868a31163b5d5518e9a1ee656). Stay frosty.*`);
 					break;
 			}
 		});
