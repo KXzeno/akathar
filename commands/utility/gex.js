@@ -29,6 +29,11 @@ export const command = {
 			.setLabel('Compile')
 			.setStyle(ButtonStyle.Danger);
 
+		const validate = new ButtonBuilder()
+			.setCustomId('validate')
+			.setLabel('Validate')
+			.setStyle(ButtonStyle.Secondary);
+
 		const row = new ActionRowBuilder()
 			.addComponents(join, cancel);
 
@@ -67,8 +72,8 @@ export const command = {
 		collector.on('collect', async i => {
 			let [tempObj, validateRepeat] = [embed.data.fields ?? undefined, false];
 
-		 	tempObj !== undefined && tempObj.forEach(user => {
-		 		if (i.user.username === user.name) {
+			tempObj !== undefined && tempObj.forEach(user => {
+				if (i.user.username === user.name) {
 					return validateRepeat = true;
 				}
 			});
@@ -129,17 +134,21 @@ export const command = {
 						//await i.deferReply()
 						await i.update({
 							components: [
-							new ActionRowBuilder().addComponents(
-								join.setDisabled(true),
-								finalize.setDisabled(true),
-								cancel.setDisabled(true))
-						],
+								new ActionRowBuilder().addComponents(
+									join.setDisabled(true),
+									finalize.setDisabled(true),
+									cancel.setDisabled(true),
+									validate
+								),
+							],
 						});
 						await i.followUp('Names were directly sent to your PMs.'); 
 					} catch (err) {
 						console.error(err);
 					}
 					break;
+				case 'validate': 
+					i.reply('yo');
 			}
 		});
 	},
