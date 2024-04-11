@@ -1,6 +1,12 @@
+// Will be refactored using TypeScript, and I plan to use 
+// databases and query languages in the future for 
+// performance and scalability reasons
+
+/* Local Imports */
 import { scheduler } from 'node:timers/promises';
 import { ComponentType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } from 'discord.js';
 
+// Build deployable command 
 export const command = {
 	data: new SlashCommandBuilder()
 	.setName('gex')
@@ -15,6 +21,7 @@ export const command = {
 			.setTimestamp()
 			.setFooter({ text: 'Make sure you have DMs enabled' });
 
+		// Constructs interactive buttons
 		const join = new ButtonBuilder()
 			.setCustomId('join')
 			.setLabel('Join')
@@ -38,15 +45,32 @@ export const command = {
 		const row = new ActionRowBuilder()
 			.addComponents(join, cancel);
 
+		// Initial interaction response
 		let res = await interaction.reply({
 			content: `${interaction.user} opened the gift exchange pool, join below if interested.`,
 			components: [row],
 			embeds: [embed]
 		});
 
+		// Construct collector to listen for future interactions
 		let collector = res.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3_600_000 }); //1 hour
+
+		/** State variables
+		 * @typedef {Object} users - stores reference for pending responses
+		 * @type {Array} fieldsArr - transforms users data into a shallow instance
+		 * @typedef {Object} linkedUsers - previous to next relationship via key and value
+		 * @typedef {Object} validateList - semi-maniputable list used for comparison
+		 * @typedef {Object} validator - immutable list to validate uniqueness of validateList
+		 * @author Kx
+		 */
 		let [users, fieldsArr, linkedUsers, validateList, validator] = [{}, [], {}, new Set(), new Map()];
 
+		/**
+		 * Global-scoped object mutation
+		 * @typedef {Object} user - User on interaction
+		 * @property {string} username - Username on interaction
+		 * @author Kx
+		 */
 		async function updateLinkedUsers({ username }, matchedUser) {
 			validateList.add({ [username]: matchedUser });
 			Object.defineProperty(linkedUsers, username, {
@@ -55,12 +79,29 @@ export const command = {
 			});
 		}
 
+		/**
+		 * Obtain a random index
+		 * @param {Array} arr - Array to index from
+		 * @returns {number} - A pseudo-random index
+		 * @author Kx
+		 */
 		function getRandomIndex(arr) {
 			return Math.floor(Math.random() * arr.length);
 		}
 
+		/**
+		 * Repositions the contents of an array without malformation
+		 * @param {Array} arr - Array to reposition contents of
+		 * @returns {Array} newArr - a shallow copy of the modified array
+		 * @author Kx
+		 */
 		let randomizeArr = (arr) => {
 			//TODO: Implement currying if possible 
+			/** Function-scope variables
+			 * @type {Array} usedIndexes - ensures a unique index on new iteration
+			 * @returns {Array} newArr - modified array 
+			 * @author Kx
+			 */
 			let [usedIndexes, newArr] = [[], []];
 			for (let val of arr.values()) {
 				let index = getRandomIndex(arr)
@@ -78,7 +119,13 @@ export const command = {
 			return newArr;
 		}
 
+		// Used to 'collect' interactions
 		collector.on('collect', async i => {
+			/** Global-scope variables
+			 * @typedef {Object} tempObj - stores digital prints of user for validation
+			 * @property {Object} ...embed.data.fields - a shallow copy of embed data
+			 * @type {boolean} validateRepeat - validates repeated interactions
+			 */
 			let [tempObj, validateRepeat] = [embed.data.fields ?? undefined, false];
 
 			tempObj !== undefined && tempObj.forEach(user => {
@@ -87,8 +134,14 @@ export const command = {
 				}
 			});
 
+			// Conditional statement separating each button's interaction and concerns
 			switch(i.customId) {
 				case 'join':
+					/**
+					 * Returns an updated embed or an ephemeral msg indicating unauthorization
+					 * @returns {} - Object mutation || interaction response
+					 * @author Kx
+					 */
 					!validateRepeat
 						? +(async () => {
 							await i.update({
@@ -110,6 +163,11 @@ export const command = {
 						})();
 					break;
 				case 'cancel':
+					/**
+					 * Returns deletion of initial response
+					 * @returns {} - Object mutation || interaction response
+					 * @author Kx
+					 */
 					if (i.user !== interaction.user) {
 						return i.reply({ content: 'Only the prompter may do this.', ephemeral: true });
 					}
@@ -121,6 +179,11 @@ export const command = {
 					});
 					break;
 				case 'finalize':
+					/**
+					 * Compiles acquired users into pairs using prev -> next algorithm, or linked list
+					 * @returns {} A method sending user matches || ephemeral msg indicating error
+					 * @author Kx
+					 */
 					if (i.user !== interaction.user) {
 						return i.reply({ content: 'Only the prompter may do this.', ephemeral: true });
 					}
@@ -160,6 +223,13 @@ export const command = {
 					}
 					break;
 				case 'validate': 
+					/**
+					 * Validation
+					 * @see {@link https://javascript.info/map-set}
+					 * @returns {} Validation response || Error msg indicating mismatch
+					 * @author Kx
+					 */
+
 					let validatePassed;
 					let validatedUsers = [];
 					let defaultMsg = 'Validating using Map and Set transformations...\n';
@@ -185,7 +255,7 @@ export const command = {
 						return await i.editReply(`${warningMsg} Advanced exception handling has not yet been implemented.`);
 					}
 					await scheduler.wait(3_000)
-console.log(validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString());
+					console.log(validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString());
 					validatePassed && await i.editReply(`${defaultMsg}${validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString().replaceAll(',','')}\nSuccess. *Note: this is an alphabetical sort and is not related at all to how you were matched. Stay frosty.*`);
 					break;
 			}
