@@ -119,14 +119,26 @@ export const command = {
 					}
 
 					randomizedFieldsArr.forEach((name, i, names) => {
-						console.log(randomizedFieldsArr, names, name);
 						if (i === names.length - 1) {
 							return users[name].send(`You've been assigned ${randomizedFieldsArr[0]}`);
 						}
 
 						users[name].send(`You've been assigned ${randomizedFieldsArr[i + 1]}`);
 					});
-					i.reply('Names were directly sent to your PMs.');
+					try {
+						//await i.deferReply()
+						await i.update({
+							components: [
+							new ActionRowBuilder().addComponents(
+								join.setDisabled(true),
+								finalize.setDisabled(true),
+								cancel.setDisabled(true))
+						],
+						});
+						await i.followUp('Names were directly sent to your PMs.'); 
+					} catch (err) {
+						console.error(err);
+					}
 					break;
 			}
 		});
