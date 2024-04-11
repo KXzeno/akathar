@@ -11,7 +11,8 @@ export const command = {
 			.setDescription('Participants:')
 			.setAuthor({ name: `Initiated by ${interaction.user.username}`, iconURL: `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}` })
 			.setThumbnail('https://media.giphy.com/media/5YrT02HhIpbiqFbF4j/giphy.gif')
-		;
+			.setTimestamp()
+			.setFooter({ text: 'Make sure you have DMs enabled' });
 
 		const join = new ButtonBuilder()
 			.setCustomId('join')
@@ -40,7 +41,28 @@ export const command = {
 		let collector = res.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3_600_000 });
 		let users = {};
 
-		let randomize = (arr) => Math.floor(Math.random() * arr.length);
+		function getRandomIndex(arr) {
+			return Math.floor(Math.random() * arr.length);
+		}
+
+		let randomizeArr = (arr) => {
+			//TODO: Implement currying if possible 
+			let [usedIndexes, newArr] = [[], []];
+			for (let val of arr.values()) {
+				let index = getRandomIndex(arr)
+				let repeated = usedIndexes.find(i => i === index);
+				while (typeof repeated !== undefined) {
+					index = getRandomIndex(arr);
+					let nextRepeated = usedIndexes.find(i => i === index);
+					if (index !== nextRepeated) {
+						break;
+					}
+				}
+				newArr[index] = val;
+				usedIndexes.push(index);
+			}
+			return newArr;
+		}
 
 		collector.on('collect', async i => {
 			let [tempObj, validateRepeat] = [embed.data.fields ?? undefined, false];
@@ -90,17 +112,19 @@ export const command = {
 					}
 
 					let fieldsArr = [...embed.data.fields.flatMap(({ name }) => !!name ? [`${name}`] : undefined)];
+					let randomizedFieldsArr = randomizeArr(fieldsArr);
+
 					if (fieldsArr.length < 2) {
 						return i.reply({ content: 'Cannot start with one user.', ephemeral: true });
 					}
 
-					tempObj.forEach(({ name }) => {
-						// Handle case where user receives his own id
-						let filteredArr = fieldsArr.filter((str) => str !== users[name].username);
-						let assigned = filteredArr[randomize(filteredArr)];
-						console.log(fieldsArr, filteredArr, assigned);
-						users[name].send(`You've been assigned ${assigned}`);
-						filteredArr.shift();
+					randomizedFieldsArr.forEach((name, i, names) => {
+						console.log(randomizedFieldsArr, names, name);
+						if (i === names.length - 1) {
+							return users[name].send(`You've been assigned ${randomizedFieldsArr[0]}`);
+						}
+
+						users[name].send(`You've been assigned ${randomizedFieldsArr[i + 1]}`);
 					});
 					i.reply('Names were directly sent to your PMs.');
 					break;
