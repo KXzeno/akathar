@@ -4,7 +4,7 @@ import { Events } from 'discord.js';
 // The distinction between `client: Client<boolean>` and `readyClient: Client<true>` is important for TypeScript developers.
 // It makes some properties non-nullable.
 
-export const command = {
+export const event = {
 	name: Events.ClientReady,
 	once: true,
 	execute(client) {

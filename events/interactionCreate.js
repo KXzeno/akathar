@@ -1,6 +1,6 @@
 import { Events } from 'discord.js';
 
-export const command = {
+export const event = {
 	name: Events.InteractionCreate,
 	async execute(interaction) {
 		if (!Interaction.isChatInputCommand()) return;
