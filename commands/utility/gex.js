@@ -10,7 +10,7 @@ import { ComponentType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonSty
 export const command = {
 	data: new SlashCommandBuilder()
 	.setName('gex')
-	.setDescription('gift exchange event'),
+	.setDescription('gift exchange event local'),
 	async execute(interaction) {
 		let embed = new EmbedBuilder()
 			.setColor(0x0099FF)
@@ -40,7 +40,7 @@ export const command = {
 		const validate = new ButtonBuilder()
 			.setCustomId('validate')
 			.setLabel('Validate')
-			.setStyle(ButtonStyle.Secondary);
+			.setStyle(ButtonStyle.Success);
 
 		const row = new ActionRowBuilder()
 			.addComponents(join, cancel);
@@ -118,6 +118,16 @@ export const command = {
 			}
 			return newArr;
 		}
+
+		/** Global state to reference duplicate interaction
+		 *
+		 * @remarks
+		 * Discord API only allows the mutation of initial responses, preventing
+		 * me from mutating the embed on case 'validate'
+		 *
+		 * @type {number}
+		*/
+		let count = 0;
 
 		// Used to 'collect' interactions
 		collector.on('collect', async i => {
@@ -223,6 +233,10 @@ export const command = {
 					}
 					break;
 				case 'validate': 
+					count++;
+					if (count > 1) {
+						return i.reply({ content: 'You can only validate once.', ephemeral: true });
+					}
 					/**
 					 * Validation
 					 * @see {@link https://javascript.info/map-set}
@@ -233,27 +247,29 @@ export const command = {
 					let validatedUsers = [];
 					let defaultMsg = 'Validating using Map and Set transformations...\n';
 					await i.deferReply()
+
+					let asyncReply = async (x, y) => await i.editReply(`${x},${y}`);
+
 					// keys = values in Sets
 					for (let [,val] of validateList.entries()) {
 						let [fetchedKey, fetchedValue] = 
 							[Object.keys(val)[0], Object.values(val)[0]];
 						validatePassed = true;
 						validator.set(fetchedKey, fetchedValue);
-						validatedUsers.push(`${fetchedValue} :dart:\n`);
+						validatedUsers.push(`${fetchedValue} :dart: \`One User is Currently Assigned.\`\n`);
 
 						if (validateList.size === validator.size) {
 							let sortedList = validatedUsers.sort((prev, next) => prev.localeCompare(next));
 							sortedList.forEach(async (name, index, list) => { 
-								let newList = await list.toSpliced(0, index).toString().replaceAll(',','');
-								await scheduler.wait(2000);
-								await i.editReply(`${defaultMsg}${newList}`);
+								let processSortedList = await list.slice(0, index + 1).toString().replaceAll(',','');
+								await asyncReply(defaultMsg, processSortedList);
 							});
 						}
 					}
-					
-
-					//	let subset = new Set({[fetchedKey]: fetchedValue})
-					//	console.log(({[fetchedKey]: fetchedValue}).isSubsetOf(validateList));
+					/* Watch for baseline availability of Set and Map methods
+					 * @example let subset = new Set({[fetchedKey]: fetchedValue})
+					 * @example console.log(({[fetchedKey]: fetchedValue}).isSubsetOf(validateList));
+					 */
 					if (validator.size !== validateList.size) { /*validateList.has({[fetchedKey]: fetchedValue*/
 						validatePassed = false;
 						let warningMsg = 'WARNING: Possibilty of mismatch, contact @kaeon_.'
@@ -262,9 +278,10 @@ export const command = {
 						await scheduler.wait(3_000);
 						return await i.editReply(`${warningMsg} Advanced exception handling has not yet been implemented.`);
 					}
-					await scheduler.wait(3_000)
-					console.log(validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString());
-					validatePassed && await i.editReply(`${defaultMsg}${validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString().replaceAll(',','')}\n## Success.\n*Note: this is an alphabetical sort and is not related at all to how you were matched.\nYou may follow or leave criticisms on the code logic [here](https://gist.github.com/KXzeno/5bda204868a31163b5d5518e9a1ee656). Stay frosty.*`);
+
+					//TODO: Use Promise API instead of async/await, resolve by completion
+					await scheduler.wait(117);
+					validatePassed && await i.editReply({ content: `${defaultMsg}${validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString().replaceAll(',','')}## Success.\n*Note: this is an alphabetical sort and is not related at all to how you were matched.\nYou may follow or leave criticisms on the code logic [here](https://gist.github.com/KXzeno/5bda204868a31163b5d5518e9a1ee656). Stay frosty.*` });
 					break;
 			}
 		});
