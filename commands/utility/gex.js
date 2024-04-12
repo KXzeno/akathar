@@ -10,7 +10,7 @@ import { ComponentType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonSty
 export const command = {
 	data: new SlashCommandBuilder()
 	.setName('gex')
-	.setDescription('gift exchange event local'),
+	.setDescription('gift exchange event'),
 	async execute(interaction) {
 		let embed = new EmbedBuilder()
 			.setColor(0x0099FF)
