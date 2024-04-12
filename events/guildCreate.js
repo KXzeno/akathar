@@ -3,7 +3,6 @@ import { scheduler } from 'node:timers/promises';
 
 export const event = {
   name: Events.GuildCreate,
-  once: true,
   async execute(guild) {
     let defaultChannel = guild.systemChannel;
     if (defaultChannel) {
