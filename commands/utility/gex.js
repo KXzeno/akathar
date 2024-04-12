@@ -53,7 +53,7 @@ export const command = {
 		});
 
 		// Construct collector to listen for future interactions
-		let collector = res.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3_600_000 }); //1 hour
+		let collector = res.createMessageComponentCollector({ componentType: ComponentType.Button, time:  24 * 60 * 60 * 1000 }); //1 day
 
 		/** State variables
 		 * @typedef {Object} users - stores reference for pending responses
