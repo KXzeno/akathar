@@ -10,7 +10,8 @@
 ## Available commands
 - `/gex` - invokes a dialog that starts a gift exchange event
   - Unfulfilled interaction timeout is set to 24 hours
-  - ...<em>TBC</em>
+  - Built-in <em>weak</em> validation of randomized inputs
+- ...<em>TBC</em>
 
 ---
 
