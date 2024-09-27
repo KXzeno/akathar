@@ -11,6 +11,7 @@
 - `/gex` - invokes a dialog that starts a gift exchange event
   - Unfulfilled interaction timeout is set to 24 hours
   - Built-in <em>weak</em> validation of randomized inputs
+![showcase-gex](https://github.com/KXzeno/akathar/blob/master/assets/showcase-1.gif)
 - ...<em>TBC</em>
 
 ---
