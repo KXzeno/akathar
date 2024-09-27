@@ -1,6 +1,6 @@
 <h2 align="center"> <del>Multipurpose</del> Discord.js Bot </h2>
 
-<h4 align="center"> After being needed three consecutive times to digitally shuffle names for a coterie's gift exchange event, I took a quick detour to making this bot for their convenience—and for undisturbed peace. </h4>
+<h4 align="center"> Ever tasked to digitally shuffle names for a coterie's gift exchange event? I took a quick detour to create this bot for its convenience—and for undisturbed peace. </h4>
 <p align="center">
   <a href="https://discord.com/oauth2/authorize?client_id=1222403123050446939">Invite</a>
 </p>
