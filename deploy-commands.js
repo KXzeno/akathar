@@ -40,7 +40,7 @@ for (const folder of commandFolders) {
 await Promise.all(importPromises);
 
 // Construct and prepare an instance of the REST module
-const rest = new REST().setToken(process.env.token);
+const rest = new REST().setToken(process.env.TOKEN);
 
 // and deploy your commands!
 (async () => {
