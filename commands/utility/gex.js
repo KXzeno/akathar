@@ -132,6 +132,7 @@ export const command = {
 		// Used to 'collect' interactions
 		collector.on('collect', async i => {
 			try {
+				await scheduler.wait(300);
 				/** Global-scope variables
 				 * @typedef {Object} tempObj - stores digital prints of user for validation
 				 * @property {Object} ...embed.data.fields - a shallow copy of embed data
