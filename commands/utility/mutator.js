@@ -113,6 +113,7 @@ export const command = {
       .setAuthor({ name: 'Weekly Mutation', iconURL: 'https://cdn.discordapp.com/emojis/1262599542914682902.webp?size=80&quality=lossless'})
       .setThumbnail('https://cdn.discordapp.com/emojis/1262599542914682902.webp?size=80&quality=lossless')
       .addFields(
+        { name: 'Map', value: mutationData.map },
         { name: 'Top Commander', value: mutationData.choice },
         { name: '\u200B', value: '\u200B' },
         ...mutatorField
