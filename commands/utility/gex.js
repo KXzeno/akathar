@@ -131,159 +131,165 @@ export const command = {
 
 		// Used to 'collect' interactions
 		collector.on('collect', async i => {
-			/** Global-scope variables
-			 * @typedef {Object} tempObj - stores digital prints of user for validation
-			 * @property {Object} ...embed.data.fields - a shallow copy of embed data
-			 * @type {boolean} validateRepeat - validates repeated interactions
-			 */
-			let [tempObj, validateRepeat] = [embed.data.fields ?? undefined, false];
+			try {
+				/** Global-scope variables
+				 * @typedef {Object} tempObj - stores digital prints of user for validation
+				 * @property {Object} ...embed.data.fields - a shallow copy of embed data
+				 * @type {boolean} validateRepeat - validates repeated interactions
+				 */
+				let [tempObj, validateRepeat] = [embed.data.fields ?? undefined, false];
 
-			tempObj !== undefined && tempObj.forEach(user => {
-				if (i.user.username === user.name) {
-					return validateRepeat = true;
-				}
-			});
-
-			// Conditional statement separating each button's interaction and concerns
-			switch(i.customId) {
-				case 'join':
-					/**
-					 * Returns an updated embed or an ephemeral msg indicating unauthorization
-					 * @returns {} - Object mutation || interaction response
-					 * @author Kx
-					 */
-					!validateRepeat
-						? +(async () => {
-							await i.update({
-								components: [new ActionRowBuilder().addComponents(join, finalize, cancel)],
-								embeds: [embed.addFields({name: `${i.user.username}`, value: `${i.user}`, inline: true})]
-							});
-							Object.defineProperties(users, {
-								[i.user.username]: {
-									value: i.user,
-									enumerable: true,
-								},
-							});
-
-							validateRepeat = false;
-						})()
-						: +(async () => {
-							validateRepeat = true; 
-							i.reply({ content: `You already registered, ${i.user}`, ephemeral: true});
-						})();
-					break;
-				case 'cancel':
-					/**
-					 * Returns deletion of initial response
-					 * @returns {} - Object mutation || interaction response
-					 * @author Kx
-					 */
-					if (i.user !== interaction.user) {
-						return i.reply({ content: 'Only the prompter may do this.', ephemeral: true });
+				tempObj !== undefined && tempObj.forEach(user => {
+					if (i.user.username === user.name) {
+						return validateRepeat = true;
 					}
+				});
 
-					i.update({
-						content: 'Operation Cancelled.',
-						components: [],
-						embeds: [],
-					});
-					break;
-				case 'finalize':
-					/**
-					 * Compiles acquired users into pairs using prev -> next algorithm, or linked list
-					 * @returns {} A method sending user matches || ephemeral msg indicating error
-					 * @author Kx
-					 */
-					if (i.user !== interaction.user) {
-						return i.reply({ content: 'Only the prompter may do this.', ephemeral: true });
-					}
+				// Conditional statement separating each button's interaction and concerns
+				switch(i.customId) {
+					case 'join':
+						/**
+						 * Returns an updated embed or an ephemeral msg indicating unauthorization
+						 * @returns {} - Object mutation || interaction response
+						 * @author Kx
+						 */
+						!validateRepeat
+							? +(async () => {
+								await i.update({
+									components: [new ActionRowBuilder().addComponents(join, finalize, cancel)],
+									embeds: [embed.addFields({name: `${i.user.username}`, value: `${i.user}`, inline: true})]
+								});
+								Object.defineProperties(users, {
+									[i.user.username]: {
+										value: i.user,
+										enumerable: true,
+									},
+								});
 
-					fieldsArr = [...embed.data.fields.flatMap(({ name }) => !!name ? [`${name}`] : undefined)];
-					let randomizedFieldsArr = randomizeArr(fieldsArr);
-
-					if (fieldsArr.length < 2) {
-						return i.reply({ content: 'Cannot start with one user.', ephemeral: true });
-					}
-
-					randomizedFieldsArr.forEach(async (name, index, names) => {
-						if (index === names.length - 1) {
-							let headUser = randomizedFieldsArr[0];
-							await updateLinkedUsers(users[name], headUser);
-							return users[name].send(`You've been assigned ${headUser}`);
+								validateRepeat = false;
+							})()
+							: +(async () => {
+								validateRepeat = true; 
+								i.reply({ content: `You already registered, ${i.user}`, ephemeral: true});
+							})();
+						break;
+					case 'cancel':
+						/**
+						 * Returns deletion of initial response
+						 * @returns {} - Object mutation || interaction response
+						 * @author Kx
+						 */
+						if (i.user !== interaction.user) {
+							return i.reply({ content: 'Only the prompter may do this.', ephemeral: true });
 						}
-						let assigned = randomizedFieldsArr[index + 1];
-						await updateLinkedUsers(users[name], assigned);
-						users[name].send(`You've been assigned ${assigned}`);
-					});
 
-					try {
-						await i.update({
-							components: [
-								new ActionRowBuilder().addComponents(
-									join.setDisabled(true),
-									finalize.setDisabled(true),
-									cancel.setDisabled(true),
-									validate
-								),
-							],
+						i.update({
+							content: 'Operation Cancelled.',
+							components: [],
+							embeds: [],
 						});
-						await i.followUp('Names were directly sent to your PMs.'); 
-					} catch (err) {
-						console.error(err);
-					}
-					break;
-				case 'validate': 
-					count++;
-					if (count > 1) {
-						return i.reply({ content: 'You can only validate once.', ephemeral: true });
-					}
-					/**
-					 * Validation
-					 * @see {@link https://javascript.info/map-set}
-					 * @returns {} Validation response || Error msg indicating mismatch
-					 * @author Kx
-					 */
-					let validatePassed;
-					let validatedUsers = [];
-					let defaultMsg = 'Validating using Map and Set transformations...\n';
-					await i.deferReply()
-
-					let asyncReply = async (x, y) => await i.editReply(`${x},${y}`);
-
-					// keys = values in Sets
-					for (let [,val] of validateList.entries()) {
-						let [fetchedKey, fetchedValue] = 
-							[Object.keys(val)[0], Object.values(val)[0]];
-						validatePassed = true;
-						validator.set(fetchedKey, fetchedValue);
-						validatedUsers.push(`${fetchedValue} :dart: \`One User is Currently Assigned.\`\n`);
-
-						if (validateList.size === validator.size) {
-							let sortedList = validatedUsers.sort((prev, next) => prev.localeCompare(next));
-							sortedList.forEach(async (name, index, list) => { 
-								let processSortedList = await list.slice(0, index + 1).toString().replaceAll(',','');
-								await asyncReply(defaultMsg, processSortedList);
-							});
+						break;
+					case 'finalize':
+						/**
+						 * Compiles acquired users into pairs using prev -> next algorithm, or linked list
+						 * @returns {} A method sending user matches || ephemeral msg indicating error
+						 * @author Kx
+						 */
+						if (i.user !== interaction.user) {
+							return i.reply({ content: 'Only the prompter may do this.', ephemeral: true });
 						}
-					}
-					/* Watch for baseline availability of Set and Map methods
-					 * @example let subset = new Set({[fetchedKey]: fetchedValue})
-					 * @example console.log(({[fetchedKey]: fetchedValue}).isSubsetOf(validateList));
-					 */
-					if (validator.size !== validateList.size) { /*validateList.has({[fetchedKey]: fetchedValue*/
-						validatePassed = false;
-						let warningMsg = 'WARNING: Possibilty of mismatch, contact @kaeon_.'
-						console.log(validator.size, validateList.size);
-						await i.followUp(warningMsg);
-						await scheduler.wait(3_000);
-						return await i.editReply(`${warningMsg} Advanced exception handling has not yet been implemented.`);
-					}
 
-					//TODO: Use Promise API instead of async/await, resolve by completion
-					await scheduler.wait(117);
-					validatePassed && await i.editReply({ content: `${defaultMsg}${validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString().replaceAll(',','')}## Success.\n*Note: this is an alphabetical sort and is not related at all to how you were matched.\nYou may follow or leave criticisms on the code logic [here](https://gist.github.com/KXzeno/5bda204868a31163b5d5518e9a1ee656). Stay frosty.*` });
-					break;
+						fieldsArr = [...embed.data.fields.flatMap(({ name }) => !!name ? [`${name}`] : undefined)];
+						let randomizedFieldsArr = randomizeArr(fieldsArr);
+
+						if (fieldsArr.length < 2) {
+							return i.reply({ content: 'Cannot start with one user.', ephemeral: true });
+						}
+
+						randomizedFieldsArr.forEach(async (name, index, names) => {
+							if (index === names.length - 1) {
+								let headUser = randomizedFieldsArr[0];
+								await updateLinkedUsers(users[name], headUser);
+								return users[name].send(`You've been assigned ${headUser}`);
+							}
+							let assigned = randomizedFieldsArr[index + 1];
+							await updateLinkedUsers(users[name], assigned);
+							users[name].send(`You've been assigned ${assigned}`);
+						});
+
+						try {
+							await i.update({
+								components: [
+									new ActionRowBuilder().addComponents(
+										join.setDisabled(true),
+										finalize.setDisabled(true),
+										cancel.setDisabled(true),
+										validate
+									),
+								],
+							});
+							await i.followUp('Names were directly sent to your PMs.'); 
+						} catch (err) {
+							console.error(err);
+						}
+						break;
+					case 'validate': 
+						count++;
+						if (count > 1) {
+							return i.reply({ content: 'You can only validate once.', ephemeral: true });
+						}
+						/**
+						 * Validation
+						 * @see {@link https://javascript.info/map-set}
+						 * @returns {} Validation response || Error msg indicating mismatch
+						 * @author Kx
+						 */
+						let validatePassed;
+						let validatedUsers = [];
+						let defaultMsg = 'Validating using Map and Set transformations...\n';
+						await i.deferReply()
+
+						let asyncReply = async (x, y) => await i.editReply(`${x},${y}`);
+
+						// keys = values in Sets
+						for (let [,val] of validateList.entries()) {
+							let [fetchedKey, fetchedValue] = 
+								[Object.keys(val)[0], Object.values(val)[0]];
+							validatePassed = true;
+							validator.set(fetchedKey, fetchedValue);
+							validatedUsers.push(`${fetchedValue} :dart: \`One User is Currently Assigned.\`\n`);
+
+							if (validateList.size === validator.size) {
+								let sortedList = validatedUsers.sort((prev, next) => prev.localeCompare(next));
+								sortedList.forEach(async (name, index, list) => { 
+									let processSortedList = await list.slice(0, index + 1).toString().replaceAll(',','');
+									await asyncReply(defaultMsg, processSortedList);
+								});
+							}
+						}
+						/* Watch for baseline availability of Set and Map methods
+						 * @example let subset = new Set({[fetchedKey]: fetchedValue})
+						 * @example console.log(({[fetchedKey]: fetchedValue}).isSubsetOf(validateList));
+						 */
+						if (validator.size !== validateList.size) { /*validateList.has({[fetchedKey]: fetchedValue*/
+							validatePassed = false;
+							let warningMsg = 'WARNING: Possibilty of mismatch, contact @kaeon_.'
+							console.log(validator.size, validateList.size);
+							await i.followUp(warningMsg);
+							await scheduler.wait(3_000);
+							return await i.editReply(`${warningMsg} Advanced exception handling has not yet been implemented.`);
+						}
+
+						//TODO: Use Promise API instead of async/await, resolve by completion
+						await scheduler.wait(117);
+						validatePassed && await i.editReply({ content: `${defaultMsg}${validatedUsers.sort((prev, next) => prev.localeCompare(next)).toString().replaceAll(',','')}## Success.\n*Note: this is an alphabetical sort and is not related at all to how you were matched.\nYou may follow or leave criticisms on the code logic [here](https://gist.github.com/KXzeno/5bda204868a31163b5d5518e9a1ee656). Stay frosty.*` });
+						break;
+				}
+			} catch (err) {
+				console.error(`ERR: ${err}`);
+				await i.reply({ content: 'Error within actions had occurred.' });
 			}
-		});
+		}
+		);
 	},
 };
