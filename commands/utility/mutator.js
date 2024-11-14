@@ -106,16 +106,28 @@ export const command = {
       }
     }
 
+    let color;
+
+    switch (mutationData.rating.at(mutationData.rating.length - 1)) {
+      case '1': color = 0xC9DAF8; break;
+      case '2': color = 0x86B7CA; break;
+      case '3': color = 0xFFE599; break;
+      case '4': color = 0x969FA4; break;
+      case '5': color = 0x9491B4; break;
+      case '6': color = 0xFF0000; break;
+      default: color = 0xFFFFFF; break;
+    }
+
     let embed = new EmbedBuilder()
-      .setColor(0x0099FF)
+      .setColor(color)
       .setTitle(mutationData.name)
       .setURL('https://discord.com/channels/1201662672383254658/1201819842475466773/1269418297330503710')
-      .setAuthor({ name: 'Weekly Mutation', iconURL: 'https://cdn.discordapp.com/emojis/1262599542914682902.webp?size=80&quality=lossless'})
-      .setThumbnail('https://cdn.discordapp.com/emojis/1262599542914682902.webp?size=80&quality=lossless')
+      .setAuthor({ name: 'Weekly Mutation', /*iconURL: 'https://i.postimg.cc/hv0M7QFr/365422.jpg'*/})
+    //.setThumbnail('https://cdn.discordapp.com/emojis/1262599542914682902.webp?size=80&quality=lossless')
       .addFields(
         { name: 'Map', value: mutationData.map },
         { name: 'Top Commander', value: mutationData.choice },
-        { name: '\u200B', value: '\u200B' },
+        // { name: '\u200B', value: '\u200B' },
         ...mutatorField
       )
       .setTimestamp()
