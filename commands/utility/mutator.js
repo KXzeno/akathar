@@ -6,6 +6,7 @@ export const command = {
   .setDescription('identifies sc2 mutators'),
   async execute(interaction) {
     let data = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=0');
+    let mutatorList = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=552822006')
 
     let mutationData = undefined;
     let mutatorField = [];
@@ -52,7 +53,7 @@ export const command = {
       while (low <= high) {
         let mid = Math.floor((low + high) / 2);
         // console.log(getYDMValue(currDate), '\n', getRawData(data[mid], 'date'));
-        console.log(mid);
+        // console.log(mid);
         if (getYDMValue(currDate) === getRawData(data[mid], 'date') || (getYDMValue(currDate) > getRawData(data[mid - 1], 'date') && !(getYDMValue(currDate) > getRawData(data[mid], 'date')))) {
           return currDate === data[mid][1] ? data[mid].split(',') : data[mid - 1].split(',');
         } else if (getYDMValue(currDate) < getRawData(data[mid], 'date')) {
@@ -67,11 +68,19 @@ export const command = {
     if (data !== undefined) {
       try {
         data = await data.text().then(res => res.split('\n'));
+        mutatorList = await mutatorList.text().then(res => res.split('\n')).then(res => {
+          let itemized = [];
+          for (let i = 0; i < res.length; i++) {
+            if (res[i] !== undefined) itemized.push(res[i].split(','));
+          }
+          return itemized;
+        });
+
         // Remove labels
-        data.shift();
+        data.shift() && mutatorList.shift() && mutatorList.pop();
 
         let mutation = searchMutator(data);
-        console.log(`Mutation: ${mutation}`);
+        // console.log(`Mutation: ${mutation}`);
         let mutators = [mutation[7], mutation[8], mutation[9]].filter(title => title.length >= 1);
         mutationData = {
           id: mutation[0],
@@ -85,7 +94,10 @@ export const command = {
         }
 
         for (let i = 0; i < mutationData.mutators.length; i++) {
-          mutatorField.push({ name: `Mutator ${i + 1}`, value: mutationData.mutators[i], inline: true });
+          // console.log(mutatorList.split(',').find(item => item[0] === mutationData.mutators[i + 1])[2])
+          let desc = mutatorList.find(mutator => mutationData.mutators[i] === mutator[0])[2];
+          // console.log(desc);
+          mutatorField.push({ name: `Mutator ${i + 1}`, value: `${mutationData.mutators[i]}\n\n${desc}`, inline: true });
         }
         // console.log('Mutator Field: ', ...mutatorField);
         // console.log(mutationData);
