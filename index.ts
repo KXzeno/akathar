@@ -24,7 +24,7 @@ let importPromises = [];
 
 for await (const folder of commandFolders) {
 	const commandsPath = path.join(commandFoldersPath, folder);
-	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js' || '.ts'));
+	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js') || file.endsWith('.ts'));
 
 	for (const file of commandFiles) {
 		const filePath = path.join(commandsPath, file);
@@ -47,7 +47,7 @@ for await (const folder of commandFolders) {
 await Promise.all(importPromises).then(() => { importPromises = []; });
 
 const eventFilesPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventFilesPath).filter(file => file.endsWith('.js' || '.ts'));
+const eventFiles = fs.readdirSync(eventFilesPath).filter(file => file.endsWith('.js') || file.endsWith('.ts'));
 
 for await (const file of eventFiles) {
 	const filePath = path.join(eventFilesPath, file);
