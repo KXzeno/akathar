@@ -9,7 +9,11 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename);
 
 // Create new client instance
-let client = new Client({ intents: [GatewayIntentBits.Guilds] });
+interface ClientWithCommands extends Client {
+	commands: Collection<string, any>
+}
+
+let client = new Client({ intents: [GatewayIntentBits.Guilds] }) as ClientWithCommands;
 
 client.commands = new Collection();
 
@@ -20,13 +24,13 @@ let importPromises = [];
 
 for await (const folder of commandFolders) {
 	const commandsPath = path.join(commandFoldersPath, folder);
-	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+	const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js' || '.ts'));
 
 	for (const file of commandFiles) {
 		const filePath = path.join(commandsPath, file);
 		const fileURL = new URL(`file://${filePath}`);
 		importPromises.push(
-			import(fileURL).then(module => {
+			import(fileURL.toString()).then(module => {
 				const { command } = module;
 				// Set a new item in the Collection with the key as the command name and the value as the exported module
 				if ('data' in command && 'execute' in command) {
@@ -43,13 +47,13 @@ for await (const folder of commandFolders) {
 await Promise.all(importPromises).then(() => { importPromises = []; });
 
 const eventFilesPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventFilesPath).filter(file => file.endsWith('.js'));
+const eventFiles = fs.readdirSync(eventFilesPath).filter(file => file.endsWith('.js' || '.ts'));
 
 for await (const file of eventFiles) {
 	const filePath = path.join(eventFilesPath, file);
 	const fileURL = new URL(`file://${filePath}`);
 	importPromises.push(
-		import(fileURL).then(module => {
+		import(fileURL.toString()).then(module => {
 			const { event } = module;
 			if (event.once) {
 				client.once(event.name, (...args) => event.execute(...args));
