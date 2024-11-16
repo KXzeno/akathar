@@ -1,4 +1,7 @@
-import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { TextChannel, SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { Prisma } from '@prisma/client';
+
+import prisma from '../../prisma/db.ts';
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -151,9 +154,30 @@ export const command = {
     )
     .setTimestamp()
     .setFooter({ text: `(${mutationData.rating}🗡${mutationData.difficulty})` });
-    await interaction.reply({
-      embeds: [embed],
-    });
+
+    let caller: string = interaction.commandName;
+
+    caller === 'mutator' ? 
+      +(async () => {
+      await interaction.reply({
+        embeds: [embed],
+      });
+    })() :
+      +(async () => {
+      try {
+        if (!interaction.guildId) throw new Error('Guild ID unobtainable.');
+
+        let config = await prisma.config.findUnique({
+          where: { serverId: interaction.guildId },
+        });
+
+        // @ts-ignore
+        let channel: TextChannel = interaction.guild.channels.cache.get(config.dmcChannelId);
+        await channel.send({ embeds: [embed], });
+      } catch (err) {
+        console.error(`ERR: Failed to parse config: ${err}`);
+      }
+    })();
   },
 };
 
