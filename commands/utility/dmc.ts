@@ -73,8 +73,9 @@ export const command = {
 		// Begin auto-post
 		targetChannel = interaction.guild.channels.cache.get((targetChannel as Config).dmcChannelId) as GuildBasedChannel as TextChannel;
 		try {
-			await targetChannel.send('Hi');
-			interaction.reply('Channel set.');
+			await targetChannel.sendTyping();
+			await mutator.execute(interaction);
+			interaction.reply({ content: 'Channel set.', ephemeral: true });
 		} catch (err) {
 			console.error(err);
 			interaction.reply('Unable to utilize channel, ensure correct permissions.')
