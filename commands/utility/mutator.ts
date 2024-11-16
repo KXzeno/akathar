@@ -156,6 +156,10 @@ export const command = {
     .setFooter({ text: `(${mutationData.rating}🗡${mutationData.difficulty})` });
 
     let caller: string = interaction.commandName;
+    let time: Date = new Date();
+    let dailyMs: number = 24 * 60 * 60 * 1000;
+    let targetMs: number = dailyMs * 7;
+    let weeklyIntervalId: NodeJS.Timer | null = null;
 
     caller === 'mutator' ? 
       +(async () => {
@@ -164,6 +168,13 @@ export const command = {
       });
     })() :
       +(async () => {
+      let currWeekRelTime: number = dailyMs * time.getDay() + 
+        (time.getUTCHours() *  60 * 60 * 1000 - 8 * 60 * 60 * 1000) + 
+        (time.getUTCMinutes() * 60 * 1000) + 
+        (time.getUTCSeconds() * 1000) + time.getMilliseconds();
+
+      let reset: number = targetMs - (currWeekRelTime % targetMs) + (3 * 60 * 60 * 1000);
+
       try {
         if (!interaction.guildId) throw new Error('Guild ID unobtainable.');
 
@@ -174,6 +185,13 @@ export const command = {
         // @ts-ignore
         let channel: TextChannel = interaction.guild.channels.cache.get(config.dmcChannelId);
         await channel.send({ embeds: [embed], });
+
+        weeklyIntervalId = setInterval(async () => {
+          await channel.send({
+            embeds: [embed],
+          });
+          reset = targetMs - (currWeekRelTime % targetMs) + (3 * 60 * 60 * 1000);
+        }, reset);
       } catch (err) {
         console.error(`ERR: Failed to parse config: ${err}`);
       }
