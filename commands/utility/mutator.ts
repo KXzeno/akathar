@@ -173,7 +173,7 @@ export const command = {
         (time.getUTCMinutes() * 60 * 1000) + 
         (time.getUTCSeconds() * 1000) + time.getMilliseconds();
 
-      let reset: number = targetMs - (currWeekRelTime % targetMs) + (3 * 60 * 60 * 1000);
+      let reset: number = targetMs - (currWeekRelTime % targetMs) + (2 * 60 * 60 * 1000);
 
       try {
         if (!interaction.guildId) throw new Error('Guild ID unobtainable.');
@@ -190,7 +190,7 @@ export const command = {
           await channel.send({
             embeds: [embed],
           });
-          reset = targetMs - (currWeekRelTime % targetMs) + (3 * 60 * 60 * 1000);
+          reset = targetMs - (currWeekRelTime % targetMs) + (2 * 60 * 60 * 1000);
         }, reset);
       } catch (err) {
         console.error(`ERR: Failed to parse config: ${err}`);
