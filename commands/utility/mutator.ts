@@ -6,6 +6,7 @@ export const command = {
   data: new SlashCommandBuilder()
   .setName('mutator')
   .setDescription('identifies sc2 mutators~'),
+  weeklyIntervalId: setInterval(() => null, 0) as NodeJS.Timer,
   async execute(interaction: ChatInputCommandInteraction) {
     let data: Response | string[] = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=0');
     let mutatorList: Response | string[][] = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=552822006')
@@ -158,7 +159,6 @@ export const command = {
     let time: Date = new Date();
     let dailyMs: number = 24 * 60 * 60 * 1000;
     let targetMs: number = dailyMs * 7;
-    let weeklyIntervalId: NodeJS.Timer | null = null;
 
     caller === 'mutator' ? 
       +(async () => {
@@ -185,7 +185,7 @@ export const command = {
         let channel: TextChannel = interaction.guild.channels.cache.get(config.dmcChannelId);
         await channel.send({ embeds: [embed], });
 
-        weeklyIntervalId = setInterval(async () => {
+        command.weeklyIntervalId = setInterval(async () => {
           await channel.send({
             embeds: [embed],
           });
@@ -197,4 +197,3 @@ export const command = {
     })();
   },
 };
-
