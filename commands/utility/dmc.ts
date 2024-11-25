@@ -17,16 +17,24 @@ export const command = {
 	data: new SlashCommandBuilder()
 	.setName('dmc')
 	.setDescription('Declare Mutation Channel~')
-	.addChannelOption(option =>
-										option
-	.setName('channel')
+	.addChannelOption(option => option .setName('channel')
 	.setDescription('channel to post weekly mutations')
 	.setRequired(true))
-	.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+	.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
+	.addBooleanOption(opt => opt.setName('terminate').setDescription('Cancel existing mutation prompter')),
 	async execute(interaction: ChatInputCommandInteraction) {
 		// await mutator.execute(interaction);
 		// interaction.reply((`<#${interaction.options._hoistedOptions[0].value}>`));
 		let channel = interaction.options.getChannel('channel');
+
+		// TODO: Handle further exceptions
+		let terminate = interaction.options.getBoolean('terminate');
+		if (terminate && typeof mutator.weeklyIntervalId === 'number') {
+			interaction.reply({ content: 'Prompter terminated.', ephemeral: true});
+			return clearInterval(mutator.weeklyIntervalId);
+		} else if (terminate && !(typeof mutator.weeklyIntervalId === 'number')) {
+			return interaction.reply({ content: 'Prompter wasn\'t initialized.', ephemeral: true});
+		}
 
 		if (!interaction.guildId || !interaction.guild) throw new Error('Guild undetected.');
 		if (!channel) throw new Error('Elected channel undetected.');
