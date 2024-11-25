@@ -1,12 +1,11 @@
 import { TextChannel, SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
-import { Prisma } from '@prisma/client';
 
 import prisma from '../../prisma/db.ts';
 
 export const command = {
   data: new SlashCommandBuilder()
   .setName('mutator')
-  .setDescription('identifies sc2 mutators'),
+  .setDescription('identifies sc2 mutators~'),
   async execute(interaction: ChatInputCommandInteraction) {
     let data: Response | string[] = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=0');
     let mutatorList: Response | string[][] = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=552822006')
@@ -74,7 +73,7 @@ export const command = {
         let rawAftMidDataDate = getRawData(aftMidData, 'date');
         if (!midData || !aftMidData || !rawMidDataDate || !rawAftMidDataDate) return false;
         if (getYDMValue(currDate) === rawMidDataDate || (getYDMValue(currDate) > rawAftMidDataDate && !(getYDMValue(currDate) > rawMidDataDate))) {
-          return currDate === data[mid][1] ? data[mid].split(',') : data[mid - 1].split(',');
+          return currDate === data[mid][1] ? data[mid].split(',') : data[mid].split(',');
         } else if (getYDMValue(currDate) < rawMidDataDate) {
           high = mid - 1;
         } else {
