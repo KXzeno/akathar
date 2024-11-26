@@ -74,7 +74,7 @@ export const command = {
         let rawAftMidDataDate = getRawData(aftMidData, 'date');
         if (!midData || !aftMidData || !rawMidDataDate || !rawAftMidDataDate) return false;
         if (getYDMValue(currDate) === rawMidDataDate || (getYDMValue(currDate) > rawAftMidDataDate && !(getYDMValue(currDate) > rawMidDataDate))) {
-          return currDate === data[mid][1] ? data[mid].split(',') : data[mid].split(',');
+          return currDate === data[mid][1] ? data[mid].split(',') : data[mid - 1].split(',');
         } else if (getYDMValue(currDate) < rawMidDataDate) {
           high = mid - 1;
         } else {
@@ -158,31 +158,19 @@ export const command = {
     let caller: string = interaction.commandName;
     let time: Date = new Date();
     let dailyMs: number = 24 * 60 * 60 * 1000;
-    let targetMs: number = dailyMs * 7;
+    let targetMs: number = 5000;
     let reset: number | null = null;
-    let currWeekRelTime: number = dailyMs * time.getDay() + 
-      (time.getUTCHours() *  60 * 60 * 1000 - 8 * 60 * 60 * 1000) + 
-      (time.getUTCMinutes() * 60 * 1000) + 
-      (time.getUTCSeconds() * 1000) + time.getMilliseconds();
+    let currWeekRelTime: number = time.getUTCSeconds() * 1000 + time.getUTCMilliseconds();
 
     async function intvFn(channel: TextChannel): Promise<void> {
       await channel.send({
         embeds: [embed],
       });
       let now: Date = new Date();
-      let newCWRL: number = dailyMs * now.getDay() + 
-        (time.getUTCHours() * 60 * 60 * 1000 - 8 * 60 * 60 * 1000) +
-        (time.getUTCMinutes() * 60 * 1000) +
-        (time.getUTCSeconds() * 1000) + time.getMilliseconds();
+      let newCWRL: number = now.getUTCSeconds() * 1000 + now.getUTCMilliseconds();
       reset = targetMs - (newCWRL % targetMs);
-      if (typeof command.weekIntvId === 'number') {
-        clearInterval(command.weekIntvId);
-        command.weekIntvId = setInterval(async () => {
-          await channel.send({
-            embeds: [embed],
-          });
-        }, reset)
-      }
+      clearTimeout(command.weekIntvId as ReturnType<typeof setTimeout> | NodeJS.Timeout);
+      command.weekIntvId = setTimeout(() => intvFn(channel), reset);
     }
 
     caller === 'mutator' ? 
@@ -201,8 +189,9 @@ export const command = {
 
         // @ts-ignore
         let channel: TextChannel = interaction.guild.channels.cache.get(config.dmcChannelId);
-        setTimeout(async() => await channel.send({ embeds: [embed] },), targetMs - (currWeekRelTime % targetMs) + (2 * 60 * 60 * 1000));
-        command.weekIntvId = setInterval(() => intvFn(channel), targetMs);
+        channel.send({ embeds: [embed] },), targetMs - (currWeekRelTime % targetMs);
+        reset = targetMs - (currWeekRelTime % targetMs);
+        command.weekIntvId = setTimeout(() => intvFn(channel), reset);
       } catch (err) {
         console.error(`ERR: Failed to parse config: ${err}`);
       }
