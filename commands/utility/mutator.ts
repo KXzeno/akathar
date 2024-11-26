@@ -169,7 +169,12 @@ export const command = {
       await channel.send({
         embeds: [embed],
       });
-      reset = targetMs - (currWeekRelTime % targetMs) + (2 * 60 * 60 * 1000);
+      let now: Date = new Date();
+      let newCWRL: number = dailyMs * now.getDay() + 
+        (time.getUTCHours() * 60 * 60 * 1000 - 8 * 60 * 60 * 1000) +
+        (time.getUTCMinutes() * 60 * 1000) +
+        (time.getUTCSeconds() * 1000) + time.getMilliseconds();
+      reset = targetMs - (newCWRL % targetMs);
       if (typeof command.weekIntvId === 'number') {
         clearInterval(command.weekIntvId);
         command.weekIntvId = setInterval(async () => {
