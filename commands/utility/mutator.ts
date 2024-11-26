@@ -155,19 +155,26 @@ export const command = {
     .setTimestamp()
     .setFooter({ text: `(${mutationData.rating}🗡${mutationData.difficulty})` });
 
+    async function getCurrWeekRelTime(): Promise<number> {
+      let now: Date = new Date();
+      return dailyMs * now.getDay() + 
+        (time.getUTCHours() * 60 * 60 * 1000 - 8 * 60 * 60 * 1000) +
+        (time.getUTCMinutes() * 60 * 1000) +
+        (time.getUTCSeconds() * 1000) + time.getMilliseconds();
+    }
+
     let caller: string = interaction.commandName;
     let time: Date = new Date();
     let dailyMs: number = 24 * 60 * 60 * 1000;
-    let targetMs: number = 5000;
+    let targetMs: number = dailyMs * 7;
     let reset: number | null = null;
-    let currWeekRelTime: number = time.getUTCSeconds() * 1000 + time.getUTCMilliseconds();
+    let currWeekRelTime: number = await getCurrWeekRelTime();
 
     async function intvFn(channel: TextChannel): Promise<void> {
       await channel.send({
         embeds: [embed],
       });
-      let now: Date = new Date();
-      let newCWRL: number = now.getUTCSeconds() * 1000 + now.getUTCMilliseconds();
+      let newCWRL: number = await getCurrWeekRelTime();
       reset = targetMs - (newCWRL % targetMs);
       clearTimeout(command.weekIntvId as ReturnType<typeof setTimeout> | NodeJS.Timeout);
       command.weekIntvId = setTimeout(() => intvFn(channel), reset);
