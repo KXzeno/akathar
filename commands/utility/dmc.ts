@@ -16,7 +16,7 @@ let targetChannel: Config | GuildBasedChannel | null = null;
 export const command = {
 	data: new SlashCommandBuilder()
 	.setName('dmc')
-	.setDescription('Declare Mutation Channel~')
+	.setDescription('Declare Mutation Channel_')
 	.addChannelOption(option => option .setName('channel')
 	.setDescription('channel to post weekly mutations')
 	.setRequired(true))
@@ -111,9 +111,9 @@ export const command = {
 					// Begin auto-post
 					targetChannel = interaction.guild.channels.cache.get((targetChannel as Config).dmcChannelId) as GuildBasedChannel as TextChannel;
 					try {
+						interaction.reply({ content: 'Channel set.', ephemeral: true });
 						await targetChannel.sendTyping();
 						await mutator.execute(interaction);
-						interaction.reply({ content: 'Channel set.', ephemeral: true });
 					} catch (err) {
 						console.error(err);
 						interaction.reply('Unable to utilize channel, ensure correct permissions.')
