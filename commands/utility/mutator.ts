@@ -155,12 +155,13 @@ export const command = {
     .setTimestamp()
     .setFooter({ text: `(${mutationData.rating}🗡${mutationData.difficulty})` });
 
-    async function getCurrWeekRelTime(): Promise<number> {
+    async function adjustTimer(): Promise<number> {
       let now: Date = new Date();
-      return dailyMs * now.getDay() + 
+      let relTime = dailyMs * now.getDay() + 
         (time.getUTCHours() * 60 * 60 * 1000 - 8 * 60 * 60 * 1000) +
         (time.getUTCMinutes() * 60 * 1000) +
         (time.getUTCSeconds() * 1000) + time.getMilliseconds();
+      return reset = targetMs - (relTime % targetMs);
     }
 
     let caller: string = interaction.commandName;
@@ -168,15 +169,14 @@ export const command = {
     let dailyMs: number = 24 * 60 * 60 * 1000;
     let targetMs: number = dailyMs * 7;
     let reset: number | null = null;
-    let currWeekRelTime: number = await getCurrWeekRelTime();
 
     async function intvFn(channel: TextChannel): Promise<void> {
       await channel.send({
         embeds: [embed],
       });
-      let newCWRL: number = await getCurrWeekRelTime();
-      reset = targetMs - (newCWRL % targetMs);
+      adjustTimer();
       clearTimeout(command.weekIntvId as ReturnType<typeof setTimeout> | NodeJS.Timeout);
+      if (typeof reset !== 'number') throw new Error('Timer failed to adjust.');
       command.weekIntvId = setTimeout(() => intvFn(channel), reset);
     }
 
@@ -196,8 +196,9 @@ export const command = {
 
         // @ts-ignore
         let channel: TextChannel = interaction.guild.channels.cache.get(config.dmcChannelId);
-        channel.send({ embeds: [embed] },), targetMs - (currWeekRelTime % targetMs);
-        reset = targetMs - (currWeekRelTime % targetMs);
+        await channel.send({ embeds: [embed] });
+        adjustTimer();
+        if (typeof reset !== 'number') throw new Error('Initial timer failed to adjust.')
         command.weekIntvId = setTimeout(() => intvFn(channel), reset);
       } catch (err) {
         console.error(`ERR: Failed to parse config: ${err}`);
