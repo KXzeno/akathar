@@ -29,10 +29,10 @@ export const command = {
 
 		// TODO: Handle further exceptions
 		let terminate = interaction.options.getBoolean('terminate');
-		if (terminate && typeof mutator.weeklyIntervalId === 'number') {
+		if (terminate && typeof mutator.weekIntvId === 'number') {
 			interaction.reply({ content: 'Prompter terminated.', ephemeral: true});
-			return clearInterval(mutator.weeklyIntervalId);
-		} else if (terminate && !(typeof mutator.weeklyIntervalId === 'number')) {
+			return clearInterval(mutator.weekIntvId);
+		} else if (terminate && !(typeof mutator.weekIntvId === 'number')) {
 			return interaction.reply({ content: 'Prompter wasn\'t initialized.', ephemeral: true});
 		}
 
