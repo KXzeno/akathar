@@ -6,7 +6,7 @@ export const command = {
   data: new SlashCommandBuilder()
   .setName('mutator')
   .setDescription('identifies sc2 mutators~'),
-  weeklyIntervalId: setInterval(() => null, 0) as NodeJS.Timer,
+  weekIntvId: setInterval(() => null, 0) as NodeJS.Timer,
   async execute(interaction: ChatInputCommandInteraction) {
     let data: Response | string[] = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=0');
     let mutatorList: Response | string[][] = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=552822006')
@@ -159,6 +159,26 @@ export const command = {
     let time: Date = new Date();
     let dailyMs: number = 24 * 60 * 60 * 1000;
     let targetMs: number = dailyMs * 7;
+    let reset: number | null = null;
+    let currWeekRelTime: number = dailyMs * time.getDay() + 
+      (time.getUTCHours() *  60 * 60 * 1000 - 8 * 60 * 60 * 1000) + 
+      (time.getUTCMinutes() * 60 * 1000) + 
+      (time.getUTCSeconds() * 1000) + time.getMilliseconds();
+
+    async function intvFn(channel: TextChannel): Promise<void> {
+      await channel.send({
+        embeds: [embed],
+      });
+      reset = targetMs - (currWeekRelTime % targetMs) + (2 * 60 * 60 * 1000);
+      if (typeof command.weekIntvId === 'number') {
+        clearInterval(command.weekIntvId);
+        command.weekIntvId = setInterval(async () => {
+          await channel.send({
+            embeds: [embed],
+          });
+        }, reset)
+      }
+    }
 
     caller === 'mutator' ? 
       +(async () => {
@@ -167,13 +187,6 @@ export const command = {
       });
     })() :
       +(async () => {
-      let currWeekRelTime: number = dailyMs * time.getDay() + 
-        (time.getUTCHours() *  60 * 60 * 1000 - 8 * 60 * 60 * 1000) + 
-        (time.getUTCMinutes() * 60 * 1000) + 
-        (time.getUTCSeconds() * 1000) + time.getMilliseconds();
-
-      let reset: number = targetMs - (currWeekRelTime % targetMs) + (2 * 60 * 60 * 1000);
-
       try {
         if (!interaction.guildId) throw new Error('Guild ID unobtainable.');
 
@@ -183,14 +196,8 @@ export const command = {
 
         // @ts-ignore
         let channel: TextChannel = interaction.guild.channels.cache.get(config.dmcChannelId);
-        await channel.send({ embeds: [embed], });
-
-        command.weeklyIntervalId = setInterval(async () => {
-          await channel.send({
-            embeds: [embed],
-          });
-          reset = targetMs - (currWeekRelTime % targetMs) + (2 * 60 * 60 * 1000);
-        }, reset);
+        setTimeout(async() => await channel.send({ embeds: [embed] },), targetMs - (currWeekRelTime % targetMs) + (2 * 60 * 60 * 1000));
+        command.weekIntvId = setInterval(() => intvFn(channel), targetMs);
       } catch (err) {
         console.error(`ERR: Failed to parse config: ${err}`);
       }
