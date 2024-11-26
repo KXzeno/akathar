@@ -2,11 +2,13 @@ import { TextChannel, SlashCommandBuilder, EmbedBuilder, ChatInputCommandInterac
 
 import prisma from '../../prisma/db.ts';
 
+type Timer = NodeJS.Timer | number | null;
+
 export const command = {
   data: new SlashCommandBuilder()
   .setName('mutator')
   .setDescription('identifies sc2 mutators~'),
-  weekIntvId: setInterval(() => null, 0) as NodeJS.Timer,
+  weekIntvId: null as Timer,
   async execute(interaction: ChatInputCommandInteraction) {
     let data: Response | string[] = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=0');
     let mutatorList: Response | string[][] = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=552822006')

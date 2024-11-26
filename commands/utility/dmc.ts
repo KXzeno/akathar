@@ -16,7 +16,7 @@ let targetChannel: Config | GuildBasedChannel | null = null;
 export const command = {
 	data: new SlashCommandBuilder()
 	.setName('dmc')
-	.setDescription('Declare Mutation Channel_')
+	.setDescription('Declare Mutation Channel~')
 	.addChannelOption(option => option .setName('channel')
 	.setDescription('channel to post weekly mutations')
 	.setRequired(true))
@@ -28,10 +28,11 @@ export const command = {
 		let channel = interaction.options.getChannel('channel');
 
 		// TODO: Handle further exceptions
+		// FIXME: Terminate fails recognition
 		let terminate = interaction.options.getBoolean('terminate');
-		if (terminate && typeof mutator.weekIntvId === 'number') {
+		if (terminate && mutator.weekIntvId !== null) {
 			interaction.reply({ content: 'Prompter terminated.', ephemeral: true});
-			return clearInterval(mutator.weekIntvId);
+			return clearInterval(mutator.weekIntvId as NodeJS.Timeout);
 		} else if (terminate && !(typeof mutator.weekIntvId === 'number')) {
 			return interaction.reply({ content: 'Prompter wasn\'t initialized.', ephemeral: true});
 		}
