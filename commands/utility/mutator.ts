@@ -158,16 +158,17 @@ export const command = {
     .setFooter({ text: `(${mutationData.rating}🗡${mutationData.difficulty})` });
 
     async function adjustTimer(): Promise<number> {
+      /** @privateRemarks `toLocaleString` or `Intl.DateTimeFormat()` constructor dismisses 
+      * milliseconds, use only for formatting, not logic precision */
       let now: Date = new Date();
       let relTime = dailyMs * now.getDay() + 
-        (time.getUTCHours() * 60 * 60 * 1000 - 8 * 60 * 60 * 1000) +
-        (time.getUTCMinutes() * 60 * 1000) +
-        (time.getUTCSeconds() * 1000) + time.getMilliseconds();
+        (now.getUTCHours() * 60 * 60 * 1000 - 8 * 60 * 60 * 1000) +
+        (now.getUTCMinutes() * 60 * 1000) +
+        (now.getUTCSeconds() * 1000) + now.getMilliseconds();
       return reset = targetMs - (relTime % targetMs);
     }
 
     let caller: string = interaction.commandName;
-    let time: Date = new Date();
     let dailyMs: number = 24 * 60 * 60 * 1000;
     let targetMs: number = dailyMs * 7;
     let reset: number | null = null;
@@ -182,6 +183,8 @@ export const command = {
       command.weekIntvId = setTimeout(() => intvFn(channel), reset);
     }
 
+    // TODO: For scalability, use switch statement
+    // TODO: Research mutator `searchMutator()` each interval; may have to reconstruct embed
     caller === 'mutator' ? 
       +(async () => {
       await interaction.reply({
