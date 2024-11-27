@@ -5,3 +5,6 @@
 # decision records
 /ADK/*/pdfs
 /ADK/*/logs
+
+# db
+/prisma
