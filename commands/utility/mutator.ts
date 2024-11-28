@@ -32,8 +32,6 @@ export const command = {
       return dateObj.toISOString().substring(0, 10);
     }
 
-    let currDate = getYDM(new Date());
-
     function getYDMValue(dateObj: Date | string): number {
       if (typeof dateObj === 'object') {
         // console.log('Converting date value');
@@ -63,6 +61,7 @@ export const command = {
     }
 
     function searchMutator(data: string | string[]): string[] | boolean {
+      let currDate = getYDM(new Date());
       let low = 0
       let high = data.length - 6;
 
@@ -157,9 +156,15 @@ export const command = {
     .setTimestamp()
     .setFooter({ text: `(${mutationData.rating}🗡${mutationData.difficulty})` });
 
+    // TODO: Perform a manual ms offset for minute insurance or enhance precision logic
     async function adjustTimer(): Promise<number> {
       /** @privateRemarks `toLocaleString` or `Intl.DateTimeFormat()` constructor dismisses 
-      * milliseconds, use only for formatting, not logic precision */
+      * milliseconds, use only for formatting, not logic precision, you can however pass it
+      * as a dateString when constructing a date, which then may be of use. 
+      *
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date#datestring}
+      * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat#options}
+      * @see {@link https://unicode.org/reports/tr35/#Time_Zone_Identifiers} */
       let now: Date = new Date();
       let relTime = dailyMs * now.getDay() + 
         (now.getUTCHours() * 60 * 60 * 1000 - 8 * 60 * 60 * 1000) +
