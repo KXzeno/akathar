@@ -28,11 +28,10 @@ export const command = {
 		let channel = interaction.options.getChannel('channel');
 
 		// TODO: Handle further exceptions
-		// FIXME: Terminate fails recognition
 		let terminate = interaction.options.getBoolean('terminate');
 		if (terminate && mutator.weekIntvId !== null) {
 			interaction.reply({ content: 'Prompter terminated.', ephemeral: true});
-			return clearInterval(mutator.weekIntvId as NodeJS.Timeout);
+			return clearTimeout(mutator.weekIntvId as NodeJS.Timeout);
 		} else if (terminate && !(typeof mutator.weekIntvId === 'number')) {
 			return interaction.reply({ content: 'Prompter wasn\'t initialized.', ephemeral: true});
 		}
@@ -128,15 +127,15 @@ export const command = {
 	// mutator.execute(interaction)
 
 	// TODO: 
-	// 1. Create scheduled mutation calls
-	// 2. Wrap POST reqs in control flow, prioritize reads
-	// 3. Update config data if new channel is chosen
-	// 4. Throw consumer side error if same channel is chosen, or do post look-back
+	//x 1. Create scheduled mutation calls
+	//x 2. Wrap POST reqs in control flow, prioritize reads
+	//x 3. Update config data if new channel is chosen
+	//x 4. Throw consumer side error if same channel is chosen, or do post look-back
 	// 5. On disconnects, query DB and resume schedule on 'Ready' event
-	// 6. PST 03:00
-	// 7. Cache locally and let interval cycle through instead of rate limiting
-	// 8. Handle potential rate limit errors gracefully
-	// 9. ADR
+	//x 6. PST 03:00
+	//x 7. Cache locally and let interval cycle through instead of rate limiting
+	//x 8. Handle potential rate limit errors gracefully
+	//x 9. ADR
 	//
-	// x. Allow forward and backward mutator search on regular call (mutator.ts)
+	//  ?. Allow forward and backward mutator search on regular call (mutator.ts)
 };
