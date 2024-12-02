@@ -33,7 +33,7 @@ export const command = {
 		// TODO: Handle further exceptions
 		let terminate = interaction.options.getBoolean('terminate');
 		if (terminate && mutator.weekIntvId !== null) {
-			interaction.reply({ content: 'Prompter terminated.', ephemeral: true});
+
 			let nullifyCh = await prisma.config.update({
 				where: {
 					serverId_dmcChannelId: {
@@ -45,6 +45,7 @@ export const command = {
 					dmcChannelId: `${channel.id}XNULL`
 				}
 			});
+			interaction.reply({ content: 'Prompter terminated.', ephemeral: true});
 			return clearTimeout(mutator.weekIntvId as NodeJS.Timeout);
 		} else if (terminate && !(typeof mutator.weekIntvId === 'number')) {
 			return interaction.reply({ content: 'Prompter wasn\'t initialized.', ephemeral: true});
@@ -125,6 +126,7 @@ export const command = {
 						interaction.reply({ content: 'Channel set.', ephemeral: true });
 						await targetChannel.sendTyping();
 						await mutator.execute(interaction);
+						isListed = true;
 					} catch (err) {
 						console.error(err);
 						interaction.reply('Unable to utilize channel, ensure correct permissions.')
