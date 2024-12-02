@@ -16,7 +16,7 @@ let targetChannel: Config | GuildBasedChannel | null = null;
 export const command = {
 	data: new SlashCommandBuilder()
 	.setName('dmc')
-	.setDescription('Declare Mutation Channel~')
+	.setDescription('Declare Mutation Channel.')
 	.addChannelOption(option => option .setName('channel')
 	.setDescription('channel to post weekly mutations')
 	.setRequired(true))
@@ -27,17 +27,28 @@ export const command = {
 		// interaction.reply((`<#${interaction.options._hoistedOptions[0].value}>`));
 		let channel = interaction.options.getChannel('channel');
 
+		if (!interaction.guildId || !interaction.guild) throw new Error('Guild undetected.');
+		if (!channel) throw new Error('Elected channel undetected.');
+
 		// TODO: Handle further exceptions
 		let terminate = interaction.options.getBoolean('terminate');
 		if (terminate && mutator.weekIntvId !== null) {
 			interaction.reply({ content: 'Prompter terminated.', ephemeral: true});
+			let nullifyCh = await prisma.config.update({
+				where: {
+					serverId_dmcChannelId: {
+						serverId: interaction.guildId,
+						dmcChannelId: channel.id,
+					},
+				},
+				data: {
+					dmcChannelId: `${channel.id}XNULL`
+				}
+			});
 			return clearTimeout(mutator.weekIntvId as NodeJS.Timeout);
 		} else if (terminate && !(typeof mutator.weekIntvId === 'number')) {
 			return interaction.reply({ content: 'Prompter wasn\'t initialized.', ephemeral: true});
 		}
-
-		if (!interaction.guildId || !interaction.guild) throw new Error('Guild undetected.');
-		if (!channel) throw new Error('Elected channel undetected.');
 
 		// Find or Create logic
 		let isListed: boolean = false;
