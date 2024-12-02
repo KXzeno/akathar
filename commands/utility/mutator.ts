@@ -75,7 +75,7 @@ export const command = {
         let rawAftMidDataDate = getRawData(aftMidData, 'date');
         if (!midData || !aftMidData || !rawMidDataDate || !rawAftMidDataDate) return false;
         if (getYDMValue(currDate) === rawMidDataDate || (getYDMValue(currDate) > rawAftMidDataDate && !(getYDMValue(currDate) > rawMidDataDate))) {
-          return currDate === data[mid][1] ? data[mid].split(',') : data[mid - 1].split(',');
+          return !(currDate >= data[mid - 1][1] && currDate < data[mid][1]) ? data[mid].split(',') : data[mid - 1].split(',');
         } else if (getYDMValue(currDate) < rawMidDataDate) {
           high = mid - 1;
         } else {
