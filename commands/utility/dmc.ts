@@ -21,7 +21,9 @@ export const command = {
 	.setDescription('channel to post weekly mutations')
 	.setRequired(true))
 	.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
-	.addBooleanOption(opt => opt.setName('terminate').setDescription('Cancel existing mutation prompter')),
+	.addBooleanOption(opt => opt.setName('terminate').setDescription('Cancel existing mutation prompter'))
+	// TODO: implement role adder
+	.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 	async execute(interaction: ChatInputCommandInteraction) {
 		// await mutator.execute(interaction);
 		// interaction.reply((`<#${interaction.options._hoistedOptions[0].value}>`));
@@ -32,7 +34,7 @@ export const command = {
 
 		// TODO: Handle further exceptions
 		let terminate = interaction.options.getBoolean('terminate');
-		if (terminate && mutator.weekIntvId !== null) {
+		if ((terminate && mutator.weekIntvId !== null) || (terminate && targetChannel !== null)) {
 
 			let nullifyCh = await prisma.config.update({
 				where: {
