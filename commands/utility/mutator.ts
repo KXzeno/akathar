@@ -7,7 +7,7 @@ type Timer = NodeJS.Timer | number | null;
 export const command = {
   data: new SlashCommandBuilder()
   .setName('mutator')
-  .setDescription('identifies sc2 mutators~'),
+  .setDescription('identifies sc2 mutators'),
   weekIntvId: null as Timer,
   async execute(interaction: ChatInputCommandInteraction) {
     let data: Response | string[] = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=0');
@@ -62,21 +62,22 @@ export const command = {
 
     function searchMutator(data: string | string[]): string[] | boolean {
       let currDate = getYDM(new Date());
+      let currDateVal = getYDMValue(currDate);
       let low = 0
       let high = data.length - 6;
 
       while (low <= high) {
         let mid = Math.floor((low + high) / 2);
-        // console.log(getYDMValue(currDate), '\n', getRawData(data[mid], 'date'));
-        // console.log(mid);
         let midData = data[mid];
-        let aftMidData = data[mid - 1];
-        let rawMidDataDate = getRawData(midData, 'date');
-        let rawAftMidDataDate = getRawData(aftMidData, 'date');
-        if (!midData || !aftMidData || !rawMidDataDate || !rawAftMidDataDate) return false;
-        if (getYDMValue(currDate) === rawMidDataDate || (getYDMValue(currDate) > rawAftMidDataDate && !(getYDMValue(currDate) > rawMidDataDate))) {
-          return !(currDate >= data[mid - 1][1] && currDate < data[mid][1]) ? data[mid].split(',') : data[mid - 1].split(',');
-        } else if (getYDMValue(currDate) < rawMidDataDate) {
+        let rawMidDataDate: number | undefined = getRawData(midData, 'date');
+        let [prevMidData, nextMidData] = [data[mid - 1], data[mid + 1]];
+        let [rawPrevDataDate, rawNextDataDate]: [number | undefined, number | undefined] = [getRawData(prevMidData, 'date'), getRawData(nextMidData, 'date')];
+        console.log(`Prev: ${rawPrevDataDate}\nTarget: ${rawMidDataDate}\nCurrent: ${currDateVal}\nNext: ${rawNextDataDate}`);
+        console.log(currDateVal);
+        if (!midData || !rawMidDataDate || !prevMidData || !nextMidData || !rawPrevDataDate || !rawNextDataDate) return false;
+        if (currDateVal >= rawMidDataDate && currDateVal < rawNextDataDate) {
+          return data[mid].split(",");
+        } else if (currDateVal < rawMidDataDate) {
           high = mid - 1;
         } else {
           low = mid + 1;
