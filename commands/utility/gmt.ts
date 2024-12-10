@@ -12,6 +12,6 @@ export const command = {
 		if (awaitingDate === null) return interaction.reply({ content: 'No timer set.', ephemeral: true });
 		let now: Date = new Date();
 		// let duration: number = awaitingDate.valueOf() - now.valueOf();
-		interaction.reply(`Awaiting Date: ${new Intl.DateTimeFormat('en-US').format(awaitingDate)}\nDuration: <t:${Math.floor(awaitingDate.valueOf() / 1000)}:F>`);
+		interaction.reply(`Awaiting Date: ${new Intl.DateTimeFormat('en-US').format(awaitingDate)}\nDuration: <t:${Math.floor(awaitingDate.valueOf() / 1000)}:R>`);
 	}
 }
