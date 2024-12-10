@@ -34,7 +34,7 @@ export const command = {
 
 		// TODO: Handle further exceptions
 		let terminate = interaction.options.getBoolean('terminate');
-		if ((terminate && mutator.weekIntvId !== null) || (terminate && targetChannel !== null)) {
+		if ((terminate && mutator.weekIntvId !== null) || (terminate && targetChannel && (targetChannel as Config).dmcChannelId.includes("XNULL") === false)) {
 
 			let nullifyCh = await prisma.config.update({
 				where: {
