@@ -1,13 +1,14 @@
 import { TextChannel, SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
 
 import prisma from '../../prisma/db.ts';
+import { command as timer } from './gmt.ts';
 
 type Timer = NodeJS.Timer | number | null;
 
 export const command = {
   data: new SlashCommandBuilder()
   .setName('mutator')
-  .setDescription('identifies sc2 mutators'),
+  .setDescription('identifies sc2 mutators~'),
   weekIntvId: null as Timer,
   async execute(interaction: ChatInputCommandInteraction) {
     let data: Response | string[] = await fetch('https://docs.google.com/spreadsheets/d/1NvYbNvHkivOKJ9vWf9EneXxvwMlCC4nkjqHlv6OCRQo/export?format=csv&gid=0');
@@ -176,11 +177,11 @@ export const command = {
        * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat#options}
        * @see {@link https://unicode.org/reports/tr35/#Time_Zone_Identifiers} */
       let now: Date = new Date();
-      let relTime = dailyMs * now.getDay() + 
-        (now.getUTCHours() * 60 * 60 * 1000 - 8 * 60 * 60 * 1000) +
+      let relTime = -(8 * 60 * 60 * 1000) + dailyMs * now.getUTCDay() + 
+        (now.getUTCHours() * 60 * 60 * 1000) +
         (now.getUTCMinutes() * 60 * 1000) +
         (now.getUTCSeconds() * 1000) + now.getMilliseconds();
-      return reset = targetMs - (relTime % targetMs);
+      return reset = targetMs - (relTime % targetMs) + dailyMs;
     }
 
     let caller: string = interaction.commandName;
@@ -197,6 +198,7 @@ export const command = {
       adjustTimer();
       clearTimeout(command.weekIntvId as ReturnType<typeof setTimeout> | NodeJS.Timeout);
       if (typeof reset !== 'number') throw new Error('Timer failed to adjust.');
+      timer.awaitingDate = new Date(new Date().setMilliseconds(reset));
       command.weekIntvId = setTimeout(() => intvFn(channel), reset);
     }
 
@@ -222,9 +224,9 @@ export const command = {
 
         // @ts-ignore
         let channel: TextChannel = interaction.guild.channels.cache.get(config.dmcChannelId);
-        await channel.send({ embeds: [embed] });
         adjustTimer();
         if (typeof reset !== 'number') throw new Error('Initial timer failed to adjust.')
+          timer.awaitingDate = new Date(new Date().setMilliseconds(reset));
           command.weekIntvId = setTimeout(() => intvFn(channel), reset);
       } catch (err) {
         console.error(`ERR: Failed to parse config: ${err}`);
