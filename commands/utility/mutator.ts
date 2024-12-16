@@ -26,7 +26,6 @@ export const command = {
     }
 
     let mutationData: MutationData | undefined = undefined;
-    let mutatorField: Array<object | undefined> = [];
 
     function getYDM(dateObj: Date): string {
       // console.log('Capturing date string');
@@ -61,6 +60,21 @@ export const command = {
       }
     }
 
+    try {
+      data = await (data as Response).text().then(res => res.split('\n')) as string[];
+      mutatorList = await (mutatorList as Response).text().then(res => res.split('\n')).then(res => {
+        let itemized = [];
+        for (let i = 0; i < res.length; i++) {
+          if (res[i] !== undefined) itemized.push(res[i].split(','));
+        }
+        return itemized;
+      }) as string[][];
+      // Remove labels
+      data.shift() && mutatorList.shift() && mutatorList.pop();
+    } catch (err) {
+      console.log(`${err}\nUnable to generate mutation data.`);
+    }
+
     function searchMutator(data: string | string[]): string[] | boolean {
       let currDate = getYDM(new Date());
       let currDateVal = getYDMValue(currDate);
@@ -88,38 +102,24 @@ export const command = {
     }
 
     async function generateMutationData(): Promise<MutationData | undefined> {
-      try {
-        data = await (data as Response).text().then(res => res.split('\n')) as string[];
-        mutatorList = await (mutatorList as Response).text().then(res => res.split('\n')).then(res => {
-          let itemized = [];
-          for (let i = 0; i < res.length; i++) {
-            if (res[i] !== undefined) itemized.push(res[i].split(','));
-          }
-          return itemized;
-        }) as string[][];
-        //
-        // Remove labels
-        data.shift() && mutatorList.shift() && mutatorList.pop();
+      // (data as String[]).shift() && (mutatorList as String[][]).shift() && (mutatorList as String[][]).pop();
+      let mutation = searchMutator(data as string[]) as string[];
 
-        let mutation = searchMutator(data) as string[];
-
-        let mutators: Array<string> = [mutation[7], mutation[8], mutation[9]].filter(title => title.length >= 1);
-        return mutationData = {
-          id: mutation[0],
-          data: mutation[1],
-          name: mutation[2],
-          map: mutation[3],
-          mutators: mutators,
-          choice: mutation[11].replaceAll(/(?:[\[\]])/g, ''),
-          difficulty: mutation[13],
-          rating: mutation[14],
-        }
-      } catch (err) {
-        console.log(`${err}\nUnable to generate mutation data.`);
+      let mutators: Array<string> = [mutation[7], mutation[8], mutation[9]].filter(title => title.length >= 1);
+      return mutationData = {
+        id: mutation[0],
+        data: mutation[1],
+        name: mutation[2],
+        map: mutation[3],
+        mutators: mutators,
+        choice: mutation[11].replaceAll(/(?:[\[\]])/g, ''),
+        difficulty: mutation[13],
+        rating: mutation[14],
       }
     }
 
     async function generateMutatorEmbed(): Promise<EmbedBuilder | undefined> {
+    let mutatorField: Array<object | undefined> = [];
       if (data !== undefined) {
         try {
           mutationData = await generateMutationData();
@@ -137,6 +137,7 @@ export const command = {
         } catch (e) {
           // console.log(`ERR: ${e}`);
         }
+        console.log(mutatorField.length);
       }
 
       let color;
@@ -214,8 +215,6 @@ export const command = {
     })() :
       +(async () => {
       try {
-        let embed = await generateMutatorEmbed();
-        if (!embed) throw new Error('Unable to generate embed.');
         if (!interaction.guildId) throw new Error('Guild ID unobtainable.');
 
         let config = await prisma.config.findUnique({
@@ -227,7 +226,7 @@ export const command = {
         adjustTimer();
         if (typeof reset !== 'number') throw new Error('Initial timer failed to adjust.')
           timer.awaitingDate = new Date(new Date().setMilliseconds(reset));
-          command.weekIntvId = setTimeout(() => intvFn(channel), reset);
+        command.weekIntvId = setTimeout(() => intvFn(channel), reset);
       } catch (err) {
         console.error(`ERR: Failed to parse config: ${err}`);
       }
