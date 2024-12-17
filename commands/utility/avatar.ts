@@ -8,7 +8,8 @@ export const command = {
 	async execute(interaction: ChatInputCommandInteraction) {
 		let userOpt = interaction.options.getUser('user');
 		if (userOpt) {
-			interaction.reply(`https://cdn.discordapp.com/avatars/${userOpt.id}/${userOpt.avatar}.png?size=4096`);
+			let avatarUrl = userOpt.displayAvatarURL({ extension: 'png', size: 1_024 });
+			interaction.reply(avatarUrl);
 		} else {
 			interaction.reply(`https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}.png?size=256`);
 		}
