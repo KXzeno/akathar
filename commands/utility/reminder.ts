@@ -24,6 +24,8 @@ export const command = {
       targetChannel = interaction.guild.channels.cache.get(timetableChannelId) as GuildBasedChannel as TextChannel;
       targetChannel.send(`### ${interaction.user.displayName}'s reminder: \`${content}\`\n${Timer.createTimer(Timer.parseInputToISO(timer))}\n-# WARNING: THIS FEATURE IS UNSTABLE, CURRENTLY ONLY SUPPORTS THE REGEX PATTERN: [DIGITS]m`);
       interaction.reply(`Reminder sent to <#${timetableChannelId}>`);
+    } else {
+      interaction.reply(`### ${interaction.user.displayName}'s reminder: \`${content}\`\n${Timer.createTimer(Timer.parseInputToISO(timer))}\n-# WARNING: THIS FEATURE IS UNSTABLE, CURRENTLY ONLY SUPPORTS THE REGEX PATTERN: [DIGITS]m`);
     }
   }
 }
