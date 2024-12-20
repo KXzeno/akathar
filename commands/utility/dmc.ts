@@ -69,7 +69,7 @@ export const command = {
 					dmcChannelId: channel.id,
 				}
 			},
-		});
+		}) as Config;
 		// console.log(targetChannel);
 		if (targetChannel) {
 			isListed = true;
@@ -119,7 +119,7 @@ export const command = {
 								dmcChannelId: channel.id,
 							}
 						},
-					});
+					}) as Config;
 
 					if (targetChannel === null) throw new Error ('Unable to create AND retrieve channel config.');
 					// Begin auto-post
