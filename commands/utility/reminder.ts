@@ -1,14 +1,9 @@
 import { ChatInputCommandInteraction, GuildBasedChannel, SlashCommandBuilder, TextChannel } from 'discord.js';
 
 import { command as timetable } from './settimetable.ts'
-import { command as test } from './ryzenboy.ts'
+import { Timer } from '../../utils/index.ts';
 
 // TODO: Create a scheduler relative to UTC and current + next year 
-
-function createTimer(ms: number): string {
-  let now: Date = new Date();
-  return `<t:${now.setMilliseconds(ms) * 10 ** -3}:R>`;
-}
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -22,13 +17,13 @@ export const command = {
     let { hasTimeTable } = timetable;
     let { timetableChannelId } = timetable;
 
+    let timer: string | null = interaction.options.getString('timer');
     let content: string | null = interaction.options.getString('description');
-
-    interaction.reply(`OUTPUT: <t:${createTimer(60000)}:R>`);
 
     if (hasTimeTable && interaction.guild && content) {
       targetChannel = interaction.guild.channels.cache.get(timetableChannelId) as GuildBasedChannel as TextChannel;
-      // targetChannel.send(content)
+      targetChannel.send(`### ${interaction.user.displayName}'s reminder: \`${content}\`\n${Timer.createTimer(Timer.parseInputToISO(timer))}\n-# WARNING: THIS FEATURE IS UNSTABLE, CURRENTLY ONLY SUPPORTS THE REGEX PATTERN: [DIGITS]m`);
+      interaction.reply(`Reminder sent to <#${timetableChannelId}>`);
     }
   }
 }
