@@ -6,7 +6,7 @@ export class Timer {
     return `<t:${now.setMilliseconds(ms) * 10 ** -3}:R>`;
   }
 
-  public static parseInputToISO(input: string) {
+  public static parseInputToISO(input: string): number | void {
     let simpleRegEx: RegExp = /^[\d]+m$/g;
     if (input.match(simpleRegEx)) {
       let exTime: number = Number.parseInt(input.replaceAll(/\D/g, ""));
