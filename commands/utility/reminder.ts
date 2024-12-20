@@ -5,6 +5,11 @@ import { command as test } from './ryzenboy.ts'
 
 // TODO: Create a scheduler relative to UTC and current + next year 
 
+function createTimer(ms: number): string {
+  let now: Date = new Date();
+  return `<t:${now.setMilliseconds(ms) * 10 ** -3}:R>`;
+}
+
 export const command = {
   data: new SlashCommandBuilder()
   .setName('reminder')
@@ -19,11 +24,11 @@ export const command = {
 
     let content: string | null = interaction.options.getString('description');
 
-    interaction.reply(`Your msg: ${content}\nThis should also be sent in <#${timetableChannelId}>`);
+    interaction.reply(`OUTPUT: <t:${createTimer(60000)}:R>`);
 
     if (hasTimeTable && interaction.guild && content) {
       targetChannel = interaction.guild.channels.cache.get(timetableChannelId) as GuildBasedChannel as TextChannel;
-      targetChannel.send(content)
+      // targetChannel.send(content)
     }
   }
 }
