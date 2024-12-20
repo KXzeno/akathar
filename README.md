@@ -33,11 +33,13 @@
 ---
 - `/reminder` - set a reminder for a specified time
   - On the duration's end, it will ping the user
-  - If `/settimetable` is used, the every reminder henceforth will be sent to the designated channel
+  - If `/settimetable` is used, then every reminder henceforth will be sent to the designated channel
 ---
 - `/settimetable` - attach a channel reference for where reminders will be posted
 ---
-
+#### Hitlist
+- Handle dmc's unique id detection more gracefully
+- Add a fallback for reminders with no descriptions
 <h5 align="center"> 
   <em>Contact <a href="mailto:kemesurient@gmail.com" target="_blank">me</a> if you wish to integrate a feature</em>
 </h4>
