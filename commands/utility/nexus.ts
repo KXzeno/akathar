@@ -59,11 +59,14 @@ export const command = {
 					name: msg.author.username,
 					avatar: msg.author.displayAvatarURL(),
 				});
-				await webhook.send(msg.content);
-				webhook.delete();
+				await webhook.send({
+					content: msg.content,
+					files: [...msg.attachments.values() || null],
+				});
 				if (msg.content === '$cancel') {
 					(interaction.channel as TextChannel).send('Connection terminated.');
 					targetChannel!.send('Connection terminated.');
+					webhook.delete();
 					outCollector.stop();
 				}
 			});
@@ -74,11 +77,14 @@ export const command = {
 					name: msg.author.username,
 					avatar: msg.author.displayAvatarURL(),
 				});
-				await webhook.send(msg.content);
-				webhook.delete();
+				await webhook.send({
+					content: msg.content,
+					files: [...msg.attachments.values() || null],
+				});
 				if (msg.content === '$cancel') {
 					targetChannel!.send('Connection terminated.');
 					(interaction.channel as TextChannel).send('Connection terminated.');
+					webhook.delete();
 					outCollector.stop();
 				}
 			});
