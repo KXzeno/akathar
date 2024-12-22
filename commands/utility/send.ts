@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, TextChannel, ChatInputCommandInteraction } from "discord.js";
+import { SlashCommandBuilder, TextChannel, ChatInputCommandInteraction, PermissionFlagsBits, User } from "discord.js";
 import { scheduler } from "timers/promises";
 
 export const command = {
@@ -6,9 +6,13 @@ export const command = {
 	.setName('send')
 	.setDescription('sends a message through a webhook')
 	.addStringOption(input => input.setName('msg').setDescription('the message to send').setRequired(true))
-	.addUserOption(user => user.setName('userinput').setDescription('a user for webhook reference').setRequired(true)),
+	.addUserOption(user => user.setName('userinput').setDescription('a user for webhook reference'))
+	.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 	async execute(interaction: ChatInputCommandInteraction) {
-		let targetUser = interaction.options.getUser('userinput');
+		let targetUser: User | null = interaction.options.getUser('userinput') || null;
+		if (!targetUser) {
+			targetUser = interaction.client.user;
+		}
 		let msg = interaction.options.getString('msg');
 
 		// TODO: Handle exceptions
