@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, Collection, Guild, GuildMessageManager, Message, MessageCollector, PermissionsBitField, SlashCommandBuilder, TextChannel } from "discord.js";
+import { ChatInputCommandInteraction, Collection, Guild, GuildMessageManager, Message, MessageCollector, PermissionsBitField, SlashCommandBuilder, TextChannel, Webhook } from "discord.js";
 import { scheduler } from "timers/promises";
 
 import { event as guildFetch } from '../../events/guildFetch.ts';
@@ -52,39 +52,50 @@ export const command = {
 			// Create multi-collector logic
 
 			let [outCollector, inCollector]: [MessageCollector, MessageCollector] = [new MessageCollector(interaction.channel), new MessageCollector(targetChannel)];
-
+			let outWebhook: Webhook | null;
+			let inWebhook: Webhook | null;
 			outCollector.on('collect', async (msg: Message) => {
 				if (msg.author.bot) return;
-				let webhook = await targetChannel!.createWebhook({ 
-					name: msg.author.username,
-					avatar: msg.author.displayAvatarURL(),
-				});
-				await webhook.send({
+				if (!outWebhook) {
+					outWebhook = await targetChannel!.createWebhook({ 
+						name: msg.author.username,
+						avatar: msg.author.displayAvatarURL(),
+					});
+				}
+				await outWebhook.send({
 					content: msg.content,
 					files: [...msg.attachments.values() || null],
 				});
 				if (msg.content === '$cancel') {
 					(interaction.channel as TextChannel).send('Connection terminated.');
 					targetChannel!.send('Connection terminated.');
-					webhook.delete();
+					outWebhook.delete();
+					if (inWebhook) {
+						inWebhook.delete();
+					}
 					outCollector.stop();
 				}
 			});
 
 			inCollector.on('collect', async (msg: Message) => {
 				if (msg.author.bot) return;
-				let webhook = await (interaction.channel as TextChannel)!.createWebhook({ 
-					name: msg.author.username,
-					avatar: msg.author.displayAvatarURL(),
-				});
-				await webhook.send({
+				if (!inWebhook) {
+					inWebhook = await (interaction.channel as TextChannel)!.createWebhook({ 
+						name: msg.author.username,
+						avatar: msg.author.displayAvatarURL(),
+					});
+				}
+				await inWebhook.send({
 					content: msg.content,
 					files: [...msg.attachments.values() || null],
 				});
 				if (msg.content === '$cancel') {
 					targetChannel!.send('Connection terminated.');
 					(interaction.channel as TextChannel).send('Connection terminated.');
-					webhook.delete();
+					inWebhook.delete();
+					if (outWebhook) {
+						outWebhook.delete();
+					}
 					outCollector.stop();
 				}
 			});
