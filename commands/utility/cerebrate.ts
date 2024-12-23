@@ -4,7 +4,7 @@ export const command = {
 	data: new SlashCommandBuilder()
 	.setName('cerebrate')
 	.setDescription('connect to an external server'),
-	async execute(interaction: ChatInputCommandInteraction, channel: TextChannel, reason: string | null) {
+	async execute(interaction: ChatInputCommandInteraction, channel: TextChannel, reason: string | null, outco: MessageCollector, inco: MessageCollector) {
 		if (!interaction.guild) throw new Error('Caller\'s guild undetected.');
 
 		let connect = new ButtonBuilder()
@@ -70,14 +70,36 @@ export const command = {
 						],
 					})
 					let menuSelectCollector: InteractionCollector<ChannelSelectMenuInteraction<'cached'>> = relocation.createMessageComponentCollector({ componentType: ComponentType.ChannelSelect, time: 300000 });
-					menuSelectCollector.on('collect', selection => {
+					menuSelectCollector.on('collect', async selection => {
 						let selectedChannelId = selection.values[0];
 						let selectedChannel: TextChannel | undefined = selection.channels.get(selectedChannelId) as TextChannel;
-						//
+
 						// TODO: Check if sendable
 						if (!selectedChannel) return;
 
-						selectedChannel.send('Relocated here.');
+						let res = await relocation.fetch()
+						// TODO: Send here
+						let relocatedEmbed = selectedChannel.send({ 
+							components: [row1.setComponents(connect, leave, relocate.setDisabled(false))],
+							embeds: res.embeds
+						});
+
+						// TODO: Remove/update current
+						// await relocation.edit({
+						// 	components: [],
+						// 	embeds: [],
+						// })
+
+						if (selection.channel === null) return;
+
+						inco.channel = selectedChannel;
+
+						let notice = await selection.reply({ content: `Moved to <#${selectedChannelId}>\n-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 5}:R>` });
+						menuSelectCollector.stop();
+						setTimeout(async () => {
+							await relocation.delete();
+							await notice.delete();
+						}, 5000);
 					});
 					break;
 				}
