@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, ButtonBuilder, ActionRowBuilder, ButtonStyle, EmbedBuilder, MessageCollector, ComponentType } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, ButtonBuilder, ActionRowBuilder, ButtonStyle, EmbedBuilder, MessageCollector, ComponentType, ChannelSelectMenuBuilder, ChannelType, InteractionCollector, ChannelSelectMenuInteraction, ButtonInteraction } from "discord.js";
 
 export const command = {
 	data: new SlashCommandBuilder()
@@ -22,7 +22,12 @@ export const command = {
 		.setLabel('Leave')
 		.setStyle(ButtonStyle.Danger);
 
-		let row = new ActionRowBuilder<ButtonBuilder>()
+		let relocate = new ButtonBuilder()
+		.setCustomId('relocate')
+		.setLabel('Relocate')
+		.setStyle(ButtonStyle.Secondary);
+
+		let row1 = new ActionRowBuilder<ButtonBuilder>()
 		.addComponents(connect, deny);
 
 		let embed = new EmbedBuilder()
@@ -33,38 +38,68 @@ export const command = {
 		})
 		.setDescription(`${interaction.user.username} sent a connection request${reason !== null ? `:\n"${reason}"` : ''}`);
 
+		let channelSelect = new ChannelSelectMenuBuilder()
+		.setCustomId('channels')
+		.setPlaceholder('Relocate the message collector')
+		.addChannelTypes([ChannelType.GuildText]);
+
+		let row2 = new ActionRowBuilder<ChannelSelectMenuBuilder>()
+		.addComponents(channelSelect);
+
 		let res = await channel.send({ 
-			components: [row],
+			components: [row1],
 			embeds: [embed]
 		});
 
 		// TODO: Implement select menu for moving channel
 
-		let outBtnCollector = res.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3600000 });
+		let outBtnCollector: InteractionCollector<ButtonInteraction<'cached'>> = res.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3600000 });
 
 		outBtnCollector.on('collect', async btn => {
-			let reply = await btn.reply({ content: 'Joined.', ephemeral: true });
-			setTimeout(() => reply.delete(), 5000);
-
-			let postConnectEmbed = await res.edit({
-				components: [row.setComponents(connect, leave)],
-				embeds: [embed.addFields(
-					{
-						name: channel.guild.name, 
-						value: btn.user.username,
-						inline: true
-					},
-					{
-						name: interaction.guild!.name,
-						value: interaction.user.username,
-						inline: true
+			switch (btn.customId) {
+				case 'connect' : {
+					let reply = await btn.reply({ content: 'Joined.', ephemeral: true });
+					setTimeout(() => reply.delete(), 5000);
+					break;
+				}
+				case 'relocate': {
+					let relocation = await btn.update({
+						components: [
+							row1.setComponents(connect, leave, relocate.setDisabled()),
+							row2,
+						],
 					})
-					.setTitle('Connection Established')],
-			});
+					let menuSelectCollector: InteractionCollector<ChannelSelectMenuInteraction<'cached'>> = relocation.createMessageComponentCollector({ componentType: ComponentType.ChannelSelect, time: 300000 });
+					menuSelectCollector.on('collect', selection => {
+						// TODO: Check if sendable
+						selection;
+					});
+					break;
+				}
+			}
 
 			if (outBtnCollector.collected.size === 1) {
+				let postConnectEmbed = await res.edit({
+					components: [
+						row1.setComponents(connect, leave, relocate),
+						// row2,
+					],
+					embeds: [embed.addFields(
+						{
+							name: channel.guild.name, 
+							value: btn.user.username,
+							inline: true
+						},
+						{
+							name: interaction.guild!.name,
+							value: interaction.user.username,
+							inline: true
+						})
+						.setTitle('Connection Established')],
+				});
+
 				let received = await (interaction.channel as TextChannel).send({
-					components: [row.setComponents(connect, leave)],
+					components: [row1.setComponents(connect, leave, relocate)],
 					embeds: [embed.setTitle('Connection Established').setDescription(null)]
 				});
 
