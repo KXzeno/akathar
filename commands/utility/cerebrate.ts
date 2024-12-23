@@ -71,8 +71,13 @@ export const command = {
 					})
 					let menuSelectCollector: InteractionCollector<ChannelSelectMenuInteraction<'cached'>> = relocation.createMessageComponentCollector({ componentType: ComponentType.ChannelSelect, time: 300000 });
 					menuSelectCollector.on('collect', selection => {
+						let selectedChannelId = selection.values[0];
+						let selectedChannel: TextChannel | undefined = selection.channels.get(selectedChannelId) as TextChannel;
+						//
 						// TODO: Check if sendable
-						selection;
+						if (!selectedChannel) return;
+
+						selectedChannel.send('Relocated here.');
 					});
 					break;
 				}
