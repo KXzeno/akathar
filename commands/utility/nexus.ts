@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, Collection, Guild, GuildMessageManager, Me
 import { scheduler } from "timers/promises";
 
 import { event as guildFetch } from '../../events/guildFetch.ts';
-import { command as wh } from './send.ts';
+import { command as transmitReq } from './cerebrate.ts';
 
 type GuildData = {
 	name: string;
@@ -14,7 +14,8 @@ export const command = {
 	data: new SlashCommandBuilder()
 	.setName('nexus')
 	.setDescription('DANGEROUSLY sends content to guild(s)')
-	.addStringOption(guild => guild.setName('guild').setDescription('server to transmit').setRequired(true)),
+	.addStringOption(guild => guild.setName('guild').setDescription('server to transmit').setRequired(true))
+	.addStringOption(reason => reason.setName('reason').setDescription('the reason for contact')),
 	async execute(interaction: ChatInputCommandInteraction) {
 		let { guildData } = guildFetch;
 		let guildInput: string | null = interaction.options.getString('guild');
@@ -49,8 +50,11 @@ export const command = {
 			if (!targetChannel) throw new Error('Unable to find system / sendable channel');
 			if (!interaction.channel) throw new Error('Unable to find caller\'s channel');
 
-			// Create multi-collector logic
+			// Create connection request
+			let reason = interaction.options.getString('reason') || null;
+			transmitReq.execute(interaction, targetChannel, reason);
 
+			// Create multi-collector logic
 			let [outCollector, inCollector]: [MessageCollector, MessageCollector] = [new MessageCollector(interaction.channel), new MessageCollector(targetChannel)];
 			let outWebhook: Webhook | null;
 			let inWebhook: Webhook | null;
