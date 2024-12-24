@@ -1,4 +1,5 @@
 import { Message, Webhook, TextChannel } from "discord.js"
+import { Nexus } from "./Nexus.ts";
 
 export class WebhookManager {
   private webhooks: Webhook[] = [];
@@ -9,10 +10,26 @@ export class WebhookManager {
     }
   }
 
-  public static async cleanse(webhooks: WebhookManager, channel: TextChannel): Promise<number> {
-    let channelWebhooks = await channel.fetchWebhooks();
+  public static async cleanse(webhooks: WebhookManager, nexus: Nexus): Promise<number> {
+    let channelOne = nexus.getChannelTarget();
+    if (!channelOne) {
+      throw new Error('Cannot parse target channel');
+    }
+    if (!nexus.outboundCollector) {
+      throw new Error('Cannot parse outbound channel');
+    }
+
+    let channelTwo = nexus.outboundCollector.channel;
+    let channelOneWebhooks = await channelOne.fetchWebhooks();
+    let channelTwoWebhooks = await (channelTwo as TextChannel).fetchWebhooks();
     let deleted: number = 0;
-    for (let [_, wh] of channelWebhooks) {
+    for (let [_, wh] of channelOneWebhooks) {
+      if (await webhooks.has(wh.name)) {
+        wh.delete();
+        deleted++;
+      }
+    }
+    for (let [_, wh] of channelTwoWebhooks) {
       if (await webhooks.has(wh.name)) {
         wh.delete();
         deleted++;
