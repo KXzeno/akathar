@@ -10,10 +10,13 @@ type GuildData = {
 	defaultChannel: string | undefined;
 }
 
+// TODO: GENERAL IDENTITY AND ESTABLISH GUILD IDENTITY
+
 export const command = {
 	data: new SlashCommandBuilder()
 	.setName('nexus')
 	.setDescription('DANGEROUSLY sends content to guild(s)')
+	// TODO: Add default options
 	.addStringOption(guild => guild.setName('guild').setDescription('server to transmit').setRequired(true))
 	.addStringOption(reason => reason.setName('reason').setDescription('the reason for contact')),
 	async execute(interaction: ChatInputCommandInteraction) {
@@ -50,15 +53,19 @@ export const command = {
 			if (!targetChannel) throw new Error('Unable to find system / sendable channel');
 			if (!interaction.channel) throw new Error('Unable to find caller\'s channel');
 
+			// Initialize multi-collector logic
+			let [outCollector, inCollector]: [MessageCollector | null, MessageCollector | null] = [new MessageCollector(interaction.channel), new MessageCollector(targetChannel)];
+
 			// Create connection request
 			let reason = interaction.options.getString('reason') || null;
-			transmitReq.execute(interaction, targetChannel, reason);
 
-			// Create multi-collector logic
-			let [outCollector, inCollector]: [MessageCollector, MessageCollector] = [new MessageCollector(interaction.channel), new MessageCollector(targetChannel)];
-			let outWebhook: Webhook | null;
-			let inWebhook: Webhook | null;
-			outCollector.on('collect', async (msg: Message) => {
+			// TODO: Store members to allow multiple
+			// TODO: Add member containment
+			let outWebhook: Webhook | null = null;
+			let inWebhook: Webhook | null = null;
+
+			// Type?
+			let outCollectorFn: (args_0: Message<boolean>, args_1: Collection<string, Message<boolean>>) => void = async (msg: Message) => {
 				if (msg.author.bot) return;
 				if (!outWebhook) {
 					outWebhook = await targetChannel!.createWebhook({ 
@@ -79,7 +86,24 @@ export const command = {
 					}
 					outCollector.stop();
 				}
-			});
+			};
+
+			let resetOutCollector = (collector: MessageCollector, channel: TextChannel): MessageCollector => {
+				collector.stop();
+				let newCollector = new MessageCollector(channel);
+				newCollector.on('collect', outCollectorFn);
+				return newCollector;
+			}
+
+			let reset = (collector: Parameters<typeof resetOutCollector>[0], channel: Parameters<typeof resetOutCollector>[1]): ReturnType<typeof resetOutCollector> => {
+				targetChannel = channel;
+				console.log(`Received Arguments: ${channel.name}\nUpdated value: ${targetChannel?.name}`);
+				return resetOutCollector(collector, collector.channel as TextChannel);
+			}
+
+			transmitReq.execute({ interaction, targetChannel, reason, outCollector, inCollector, outWebhook, inWebhook }, reset);
+
+			outCollector.on('collect', outCollectorFn);
 
 			inCollector.on('collect', async (msg: Message) => {
 				if (msg.author.bot) return;
