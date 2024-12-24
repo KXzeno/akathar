@@ -1,20 +1,19 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, ButtonBuilder, ActionRowBuilder, ButtonStyle, EmbedBuilder, MessageCollector, ComponentType, ChannelSelectMenuBuilder, ChannelType, InteractionCollector, ChannelSelectMenuInteraction, ButtonInteraction, Webhook, Message, Collection } from "discord.js";
 
+import { Nexus } from "../../utils/index.ts";
+
 type NexusProps = {
 	interaction: ChatInputCommandInteraction;
+	nexus: Nexus;
 	targetChannel: TextChannel;
 	reason: string | null;
-	outCollector: MessageCollector;
-	inCollector: MessageCollector;
-	outWebhook: Webhook | null;
-	inWebhook: Webhook | null;
 }
 
 export const command = {
 	data: new SlashCommandBuilder()
 	.setName('cerebrate')
 	.setDescription('connect to an external server'),
-	async execute(props: NexusProps, reset: (collector: MessageCollector, channel: TextChannel) => MessageCollector) {
+	async execute(props: NexusProps) {
 		if (!props.interaction.guild) throw new Error('Caller\'s guild undetected.');
 
 		let connect = new ButtonBuilder()
@@ -97,24 +96,10 @@ export const command = {
 						if (selection.channel === null) return;
 
 						// Update nexus variables
-						props.targetChannel = props.inCollector.channel = selectedChannel;
-
-						/*
-						// 1
-						props.outCollector.stop();
-
-						// 2
-						let test = new MessageCollector(props.outCollector.channel);
-
-						// 3
-						test.on('collect', (msg) => {
-							if (!msg.author.bot) props.targetChannel.send('Yo');
-						});
-						*/
-
-						console.log(`Transmitted Arguments: ${props.targetChannel.name}`);
-						let newCollector = reset(props.outCollector, selectedChannel);
-
+						if (props.nexus.outboundCollector === null) {
+							throw new Error('Outbound collecor not initialized');
+						}
+						props.targetChannel = props.nexus.outboundCollector.channel = props.nexus.setChannelTarget(selectedChannel);
 						let notice = await selection.reply({ content: `Moved to <#${selectedChannelId}>\n-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 5}:R>` });
 						menuSelectCollector.stop();
 						setTimeout(async () => {
