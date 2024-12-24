@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, ButtonBuilder, ActionRowBuilder, ButtonStyle, EmbedBuilder, MessageCollector, ComponentType, ChannelSelectMenuBuilder, ChannelType, InteractionCollector, ChannelSelectMenuInteraction, ButtonInteraction, Webhook } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, ButtonBuilder, ActionRowBuilder, ButtonStyle, EmbedBuilder, MessageCollector, ComponentType, ChannelSelectMenuBuilder, ChannelType, InteractionCollector, ChannelSelectMenuInteraction, ButtonInteraction, Webhook, Message, Collection } from "discord.js";
 
 type NexusProps = {
 	interaction: ChatInputCommandInteraction;
@@ -14,7 +14,7 @@ export const command = {
 	data: new SlashCommandBuilder()
 	.setName('cerebrate')
 	.setDescription('connect to an external server'),
-	async execute(props: NexusProps) {
+	async execute(props: NexusProps, reset: (collector: MessageCollector, channel: TextChannel) => MessageCollector) {
 		if (!props.interaction.guild) throw new Error('Caller\'s guild undetected.');
 
 		let connect = new ButtonBuilder()
@@ -98,7 +98,22 @@ export const command = {
 
 						// Update nexus variables
 						props.targetChannel = props.inCollector.channel = selectedChannel;
-						props.inWebhook = null;
+
+						/*
+						// 1
+						props.outCollector.stop();
+
+						// 2
+						let test = new MessageCollector(props.outCollector.channel);
+
+						// 3
+						test.on('collect', (msg) => {
+							if (!msg.author.bot) props.targetChannel.send('Yo');
+						});
+						*/
+
+						console.log(`Transmitted Arguments: ${props.targetChannel.name}`);
+						let newCollector = reset(props.outCollector, selectedChannel);
 
 						let notice = await selection.reply({ content: `Moved to <#${selectedChannelId}>\n-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 5}:R>` });
 						menuSelectCollector.stop();
