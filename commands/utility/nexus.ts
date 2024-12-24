@@ -54,6 +54,7 @@ export const command = {
 
 				if (msg.content === '$cancel') {
 					Nexus.terminate(nexus);
+					WebhookManager.cleanse(webhooks, nexus).catch(err => console.error(err));
 					webhooks.eradicate();
 				}
 			};
@@ -78,6 +79,7 @@ export const command = {
 				await WebhookManager.fire(webhooks.get(msg.author.username, interaction.channel as TextChannel), msg);
 				if (msg.content === '$cancel') {
 					Nexus.terminate(nexus);
+					WebhookManager.cleanse(webhooks, nexus).catch(err => console.error(err));
 					webhooks.eradicate();
 				}
 			});
