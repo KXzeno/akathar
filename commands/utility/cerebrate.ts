@@ -1,11 +1,21 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, ButtonBuilder, ActionRowBuilder, ButtonStyle, EmbedBuilder, MessageCollector, ComponentType, ChannelSelectMenuBuilder, ChannelType, InteractionCollector, ChannelSelectMenuInteraction, ButtonInteraction } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, ButtonBuilder, ActionRowBuilder, ButtonStyle, EmbedBuilder, MessageCollector, ComponentType, ChannelSelectMenuBuilder, ChannelType, InteractionCollector, ChannelSelectMenuInteraction, ButtonInteraction, Webhook } from "discord.js";
+
+type NexusProps = {
+	interaction: ChatInputCommandInteraction;
+	channel: TextChannel;
+	reason: string | null;
+	outCollector: MessageCollector;
+	inCollector: MessageCollector;
+	outWebhook: Webhook | null;
+	inWebhook: Webhook | null;
+}
 
 export const command = {
 	data: new SlashCommandBuilder()
 	.setName('cerebrate')
 	.setDescription('connect to an external server'),
-	async execute(interaction: ChatInputCommandInteraction, channel: TextChannel, reason: string | null, outco: MessageCollector, inco: MessageCollector) {
-		if (!interaction.guild) throw new Error('Caller\'s guild undetected.');
+	async execute(props: NexusProps) {
+		if (!props.interaction.guild) throw new Error('Caller\'s guild undetected.');
 
 		let connect = new ButtonBuilder()
 		.setCustomId('connect')
@@ -33,10 +43,10 @@ export const command = {
 		let embed = new EmbedBuilder()
 		.setTitle('Connection Request')
 		.setAuthor({
-			name: interaction.guild.name,
-			iconURL: interaction.guild.iconURL() as string
+			name: props.interaction.guild.name,
+			iconURL: props.interaction.guild.iconURL() as string
 		})
-		.setDescription(`${interaction.user.username} sent a connection request${reason !== null ? `:\n"${reason}"` : ''}`);
+		.setDescription(`${props.interaction.user.username} sent a connection request${props.reason !== null ? `:\n"${props.reason}"` : ''}`);
 
 		let channelSelect = new ChannelSelectMenuBuilder()
 		.setCustomId('channels')
@@ -46,7 +56,7 @@ export const command = {
 		let row2 = new ActionRowBuilder<ChannelSelectMenuBuilder>()
 		.addComponents(channelSelect);
 
-		let res = await channel.send({ 
+		let res = await props.channel.send({ 
 			components: [row1],
 			embeds: [embed]
 		});
@@ -77,22 +87,18 @@ export const command = {
 						// TODO: Check if sendable
 						if (!selectedChannel) return;
 
-						let res = await relocation.fetch()
-						// TODO: Send here
+						let res = await relocation.fetch();
+
 						let relocatedEmbed = selectedChannel.send({ 
-							components: [row1.setComponents(connect, leave, relocate.setDisabled(false))],
+							components: [row1.setComponents(connect, leave)],
 							embeds: res.embeds
 						});
 
-						// TODO: Remove/update current
-						// await relocation.edit({
-						// 	components: [],
-						// 	embeds: [],
-						// })
-
 						if (selection.channel === null) return;
 
-						inco.channel = selectedChannel;
+						// Update nexus variables
+						props.channel = props.inCollector.channel = selectedChannel;
+						props.inWebhook = null;
 
 						let notice = await selection.reply({ content: `Moved to <#${selectedChannelId}>\n-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 5}:R>` });
 						menuSelectCollector.stop();
@@ -113,19 +119,19 @@ export const command = {
 					],
 					embeds: [embed.addFields(
 						{
-							name: channel.guild.name, 
+							name: props.channel.guild.name, 
 							value: btn.user.username,
 							inline: true
 						},
 						{
-							name: interaction.guild!.name,
-							value: interaction.user.username,
+							name: props.interaction.guild!.name,
+							value: props.interaction.user.username,
 							inline: true
 						})
 						.setTitle('Connection Established')],
 				});
 
-				let received = await (interaction.channel as TextChannel).send({
+				let received = await (props.interaction.channel as TextChannel).send({
 					components: [row1.setComponents(connect, leave, relocate)],
 					embeds: [embed.setTitle('Connection Established').setDescription(null)]
 				});
