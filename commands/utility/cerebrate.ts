@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, ButtonBu
 
 type NexusProps = {
 	interaction: ChatInputCommandInteraction;
-	channel: TextChannel;
+	targetChannel: TextChannel;
 	reason: string | null;
 	outCollector: MessageCollector;
 	inCollector: MessageCollector;
@@ -56,7 +56,7 @@ export const command = {
 		let row2 = new ActionRowBuilder<ChannelSelectMenuBuilder>()
 		.addComponents(channelSelect);
 
-		let res = await props.channel.send({ 
+		let res = await props.targetChannel.send({ 
 			components: [row1],
 			embeds: [embed]
 		});
@@ -97,7 +97,7 @@ export const command = {
 						if (selection.channel === null) return;
 
 						// Update nexus variables
-						props.channel = props.inCollector.channel = selectedChannel;
+						props.targetChannel = props.inCollector.channel = selectedChannel;
 						props.inWebhook = null;
 
 						let notice = await selection.reply({ content: `Moved to <#${selectedChannelId}>\n-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 5}:R>` });
@@ -119,7 +119,7 @@ export const command = {
 					],
 					embeds: [embed.addFields(
 						{
-							name: props.channel.guild.name, 
+							name: props.targetChannel.guild.name, 
 							value: btn.user.username,
 							inline: true
 						},
