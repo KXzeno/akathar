@@ -9,7 +9,7 @@ import {  ChatInputCommandInteraction, Collection, Guild, Message, MessageCollec
 import { event as guildFetch } from '../events/guildFetch.ts';
 import { WebhookManager } from './index.ts';
 
-import { Sojourn } from './types.ts';
+import { Sojourn, GuildData } from './types.ts';
 
 export class Nexus {
   private interaction: ChatInputCommandInteraction;
@@ -60,6 +60,10 @@ export class Nexus {
     }
 
     return this.inboundCollector = new MessageCollector(this.targetChannel);
+  }
+
+  public static fetchGuilds(): GuildData[] {
+    return guildFetch.guildData;
   }
 
   public terminate(): void {
