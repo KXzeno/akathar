@@ -1,16 +1,15 @@
 // TODO: Enable hypertoggling for >15 webhooks
 // TODO: On timed deletions, handle exception where msg is prematurely deleted
 // TODO: Disable self-guild calls
+// TODO: Remove outbound initial reply
+// TODO: Rate limit and only allow one session
 
 import {  ChatInputCommandInteraction, Collection, Guild, Message, MessageCollector, PermissionsBitField, TextChannel } from 'discord.js';
 
 import { event as guildFetch } from '../events/guildFetch.ts';
 import { WebhookManager } from './index.ts';
 
-export type Sojourn = {
-  name: string;
-  guild: Guild;
-}
+import { Sojourn } from './types.ts';
 
 export class Nexus {
   private interaction: ChatInputCommandInteraction;
@@ -64,6 +63,7 @@ export class Nexus {
   }
 
   public terminate(): void {
+    console.log(this.capacity());
     if (this.capacity() === 0) {
       // Already have custom dispatch msg on denial
       this.outboundCollector?.stop();
@@ -79,11 +79,23 @@ export class Nexus {
     }
     let channelNames: string[] = [];
     let disparateChannels: number = 0;
-
-    (this.sourceChannel as TextChannel).send('Connection terminated.');
-    this.targetChannel!.send('Connection terminated.');
-    this.outboundCollector?.stop();
-    this.inboundCollector?.stop();
+    for (let { guild } of this.sojourns) {
+      if (!channelNames.includes(guild.name)) {
+        channelNames.push(guild.name);
+        disparateChannels++;
+      }
+    }
+    console.log(channelNames);
+    console.log(disparateChannels);
+    if (disparateChannels > 1) {
+      (this.sourceChannel as TextChannel).send('Connection terminated.');
+      this.targetChannel!.send('Connection terminated.');
+      this.outboundCollector?.stop();
+      this.inboundCollector?.stop();
+      return;
+    }
+    // Else have specialized msgs override
+    return;
   }
 
   public getSojourns(): Sojourn[] {
@@ -104,7 +116,15 @@ export class Nexus {
 
   public removeSojourn(sojournInput: Sojourn): void {
     let prevCount = this.capacity();
-    this.sojourns = this.sojourns.filter(sojourn => sojourn.name.toUpperCase() !== sojournInput.name.toUpperCase());
+    this.sojourns = this.sojourns.filter(sojourn => {
+      if (sojourn.name.toUpperCase() === sojournInput.name.toUpperCase()) {
+        if (sojourn.guild === sojournInput.guild) {
+          return true;
+        }
+        return false;
+      }
+      return false;
+    });
     let newCount = this.capacity();
     if (prevCount === newCount) {
       throw new Error('User does not exist in the nexus.');
