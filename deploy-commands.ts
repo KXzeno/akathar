@@ -29,10 +29,10 @@ for (const folder of commandFolders) {
 		import(fileURL.toString()).then(module => {
 			const { command } = module;
 			if ('data' in command && 'execute' in command) {
-				// let { name } = command.data;
-				// if (omitted.includes(name) === false) {
-				commands.push(command.data.toJSON());
-				// }
+				let { name } = command.data;
+				if (omitted.includes(name) === false) {
+					commands.push(command.data.toJSON());
+				}
 			} else {
 				console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
 			}
