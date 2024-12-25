@@ -1,3 +1,5 @@
+// TODO: Enable hypertoggling for >15 webhooks
+
 import {  ChatInputCommandInteraction, Collection, Guild, Message, MessageCollector, PermissionsBitField, SlashCommandBuilder, TextChannel, Webhook } from 'discord.js';
 
 import { event as guildFetch } from '../events/guildFetch.ts';
@@ -15,6 +17,7 @@ export class Nexus {
   private targetChannel: TextChannel | null = null;
   public outboundCollector: MessageCollector | null = null;
   public inboundCollector: MessageCollector | null = null;
+  public webhookController: WebhookManager = new WebhookManager();
 
   constructor(interaction: ChatInputCommandInteraction, guildInput: string, reason: string | null) {
     this.interaction = interaction;
@@ -31,11 +34,15 @@ export class Nexus {
     }
   }
 
-  public static terminate(nexus: Nexus) {
-    (nexus.interaction.channel as TextChannel).send('Connection terminated.');
-    nexus.targetChannel!.send('Connection terminated.');
-    nexus.outboundCollector?.stop();
-    nexus.inboundCollector?.stop();
+  public terminate() {
+    (this.interaction.channel as TextChannel).send('Connection terminated.');
+    this.targetChannel!.send('Connection terminated.');
+    this.outboundCollector?.stop();
+    this.inboundCollector?.stop();
+  }
+
+  public getReason(): string | null {
+    return this.reason || null;
   }
 
   public getGuildTarget(): Guild | null {
@@ -93,17 +100,25 @@ export class Nexus {
     }
   }
 
-  private redirectOutboundCollector(newChannel: TextChannel): void {
+  public async redirectOutboundCollector(newChannel: TextChannel): Promise<void> {
     if (this.outboundCollector === null) {
       throw new Error('No collector to redirect');
     }
 
+    if (!this.targetChannel) {
+      throw new Error('No target channel initialized');
+    }
+
+    let currentChannel = this.outboundCollector.channel as TextChannel;
     this.outboundCollector.stop();
     this.outboundCollector = null;
-    this.outboundCollector = new MessageCollector(newChannel);
+    this.outboundCollector = new MessageCollector(currentChannel);
+    await WebhookManager.transfer(this.webhookController, this.targetChannel, newChannel);
+    this.targetChannel = newChannel;
+    this.outboundCollector.on('collect', this.outCollectorFn);
   }
 
-  private redirectInboundCollector(newChannel: TextChannel): void {
+  public async redirectInboundCollector(newChannel: TextChannel): Promise<void> {
     if (this.inboundCollector === null) {
       throw new Error('No collector to redirect');
     }
@@ -111,25 +126,59 @@ export class Nexus {
     this.inboundCollector.stop();
     this.inboundCollector = null;
     this.inboundCollector = new MessageCollector(newChannel);
+    this.inboundCollector.on('collect', this.inCollectorFn);
   }
 
-  public createOutboundCollector(): MessageCollector {
-    if (!this.interaction) {
-      throw new Error('Interaction undetected.');
+  // Type?
+  public outCollectorFn: (args_0: Message<boolean>, args_1: Collection<string, Message<boolean>>) => void = async (msg: Message) => {
+    if (msg.author.bot) return;
+    if (await this.webhookController.has(msg.author.username, this.targetChannel as TextChannel) === false) {
+      await this.webhookController.add(msg, this.targetChannel as TextChannel);
     }
+    let webhook = this.webhookController.get(msg.author.username, this.targetChannel as TextChannel);
+    // console.log(`From ${msg.channel} to ${targetChannel}, outbound`);
+    await WebhookManager.fire(webhook, msg);
 
-    if (!this.interaction.channel) {
-      throw new Error('Channel of interaction undetected.');
+    if (msg.content === '$cancel') {
+      this.terminate();
+      WebhookManager.cleanse(this.webhookController, this).catch(err => console.error(err));
+      this.webhookController.eradicate();
     }
+  };
 
-    return this.outboundCollector = new MessageCollector(this.interaction.channel);
+  public inCollectorFn: (args_0: Message<boolean>, args_1: Collection<string, Message<boolean>>) => void = async (msg: Message) => {
+    if (msg.author.bot) return;
+    if (await this.webhookController.has(msg.author.username, this.interaction.channel as TextChannel) === false) {
+      await this.webhookController.add(msg, this.interaction.channel as TextChannel);
+    }
+    // console.log(`From ${msg.channel} to ${interaction.channel}, inbound`);
+    await WebhookManager.fire(this.webhookController.get(msg.author.username, this.interaction.channel as TextChannel), msg);
+    if (msg.content === '$cancel') {
+      this.terminate();
+      WebhookManager.cleanse(this.webhookController, this).catch(err => console.error(err));
+      this.webhookController.eradicate();
+    }
+  };
+
+
+
+public createOutboundCollector(): MessageCollector {
+  if (!this.interaction) {
+    throw new Error('Interaction undetected.');
   }
 
-  public createInboundCollector(): MessageCollector {
-    if (!this.targetChannel) {
-      throw new Error('Channel target can not be found.');
-    }
-
-    return this.inboundCollector = new MessageCollector(this.targetChannel);
+  if (!this.interaction.channel) {
+    throw new Error('Channel of interaction undetected.');
   }
+
+  return this.outboundCollector = new MessageCollector(this.interaction.channel);
+}
+
+public createInboundCollector(): MessageCollector {
+  if (!this.targetChannel) {
+    throw new Error('Channel target can not be found.');
+  }
+
+  return this.inboundCollector = new MessageCollector(this.targetChannel);
+}
 }
