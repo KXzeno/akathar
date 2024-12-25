@@ -4,10 +4,8 @@ import { command as timetable } from './settimetable.ts'
 import { Timer } from '../../utils/index.ts';
 
 // TODO: Create a scheduler relative to UTC and current + next year 
-// TODO: Create status check with reaction-based termination
-// TODO: Allow early termination
 
-    // Timer for more general term?
+// Timer for more general term?
 export const command = {
   data: new SlashCommandBuilder()
   .setName('reminder')
@@ -23,6 +21,10 @@ export const command = {
     let { timetableChannelId } = timetable;
 
     let timer: string | null = interaction.options.getString('timer');
+    if (timer === null) {
+      throw new Error('Timer input wasn\'t parsed.');
+    }
+
     let content: string | null = interaction.options.getString('description');
 
     // 'content' fallback
@@ -36,7 +38,12 @@ export const command = {
         return interaction.reply("Something went wrong with finding the timetable...");
       }
 
-      let msgRef = await targetChannel.send(`### ${interaction.user.displayName}'s reminder: \`${content}\`\n${Timer.createTimer(Timer.parseInputToISO(timer))}\n-# WARNING: THIS FEATURE IS UNSTABLE, CURRENTLY ONLY SUPPORTS THE REGEX PATTERN: [DIGITS]m (e.g., 20m)`);
+      let globalTimer = Timer.parseInputToISO(timer);
+      if (typeof globalTimer !== 'number') {
+        throw new Error('Timer failed to construct.');
+      }
+
+      let msgRef = await targetChannel.send(`### ${interaction.user.displayName}'s reminder: \`${content}\`\n${Timer.createTimer(globalTimer)}\n-# WARNING: THIS FEATURE IS UNSTABLE, CURRENTLY ONLY SUPPORTS THE REGEX PATTERN: [DIGITS]m (e.g., 20m)`);
       msgRef.react('✅');
 
       interaction.reply(`Reminder sent to <#${timetableChannelId}>`);
@@ -45,9 +52,14 @@ export const command = {
       setTimeout(() => {
         // targetChannel already checked
         targetChannel!.send({ content: `<@${interaction.user.id}>`, reply: { messageReference: msgRef.id }});
-      }, Timer.parseInputToISO(timer));
+      }, globalTimer);
     } else {
-      let msgRef = await interaction.reply({ content: `### ${interaction.user.displayName}'s reminder: \`${content}\`\n${Timer.createTimer(Timer.parseInputToISO(timer))}\n-# WARNING: THIS FEATURE IS UNSTABLE, CURRENTLY ONLY SUPPORTS THE REGEX PATTERN: [DIGITS]m`, fetchReply: true});
+      let globalTimer = Timer.parseInputToISO(timer);
+      if (typeof globalTimer !== 'number') {
+        throw new Error('Timer failed to construct.');
+      }
+
+      let msgRef = await interaction.reply({ content: `### ${interaction.user.displayName}'s reminder: \`${content}\`\n${Timer.createTimer(globalTimer)}\n-# WARNING: THIS FEATURE IS UNSTABLE, CURRENTLY ONLY SUPPORTS THE REGEX PATTERN: [DIGITS]m`, fetchReply: true});
       msgRef.react('\u{1F50C}');
 
       let msg = await interaction.fetchReply();
@@ -55,11 +67,11 @@ export const command = {
       if (msg === null) return;
       let timeoutID = setTimeout(() => {
         msg.reply({ content: `<@${interaction.user.id}>`});
-      }, Timer.parseInputToISO(timer));
+      }, globalTimer);
 
       let collector: ReactionCollector = new ReactionCollector(msgRef, { filter: (reaction: MessageReaction, user: User) => {
         return reaction.emoji.name === '\u{1F50C}' && !user.bot;
-      }, time: Timer.parseInputToISO(timer)});
+      }, time: globalTimer});
 
       collector.on('collect', (reaction, user) => {
         if (user.id !== interaction.user.id) {
