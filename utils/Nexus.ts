@@ -5,7 +5,6 @@ import {  ChatInputCommandInteraction, Collection, Guild, Message, MessageCollec
 import { event as guildFetch } from '../events/guildFetch.ts';
 import { WebhookManager } from './index.ts';
 
-
 export class Nexus {
   private interaction: ChatInputCommandInteraction;
   private sourceChannel: TextChannel;
@@ -16,6 +15,7 @@ export class Nexus {
   private botId: string;
   private targetGuild: Guild | null = null;
   private targetChannel: TextChannel | null = null;
+  private sojourns: string[] = [];
   public outboundCollector: MessageCollector | null = null;
   public inboundCollector: MessageCollector | null = null;
   public webhookController: WebhookManager = new WebhookManager();
@@ -55,11 +55,50 @@ export class Nexus {
 
     return this.inboundCollector = new MessageCollector(this.targetChannel);
   }
+
   public terminate() {
     (this.sourceChannel as TextChannel).send('Connection terminated.');
     this.targetChannel!.send('Connection terminated.');
     this.outboundCollector?.stop();
     this.inboundCollector?.stop();
+  }
+
+  public getSojourns(): string[] {
+    return this.sojourns;
+  }
+
+  public setSojourns(...args: string[]): string[] | void {
+    if (args.length === 1) {
+      if (this.hasSojourn(args[0])) {
+        console.error('User is already participating.');
+        return;
+      }
+      this.sojourns.push(args[0]);
+      return;
+    }
+    return this.sojourns = [...args];
+  }
+
+  public removeSojourn(sojournInput: string): void {
+    let prevCount = this.capacity();
+    this.sojourns = this.sojourns.filter(sojourn => sojourn.toUpperCase() !== sojournInput.toUpperCase());
+    let newCount = this.capacity();
+    if (prevCount === newCount) {
+      throw new Error('User does not exist in the nexus.');
+    }
+  }
+
+  public hasSojourn(sojournInput: string): boolean {
+    let sojournIndex = this.sojourns.findIndex(sojourn => sojourn.toUpperCase() === sojournInput.toUpperCase());
+    if (sojournIndex === -1) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  public capacity(): number {
+    return this.sojourns.length;
   }
 
   public getSourceChannel(): TextChannel {
@@ -193,7 +232,13 @@ export class Nexus {
 
   // Type?
   public outCollectorFn: (args_0: Message<boolean>, args_1: Collection<string, Message<boolean>>) => void = async (msg: Message) => {
+    // Is not a bot
     if (msg.author.bot) return;
+
+    // Is a participant
+    if (!this.hasSojourn(msg.author.username)) {
+      return;
+    }
 
     if (this.outboundCollector === null) {
       throw new Error('Outbound collector is somehow null.');
@@ -218,7 +263,14 @@ export class Nexus {
   };
 
   public inCollectorFn: (args_0: Message<boolean>, args_1: Collection<string, Message<boolean>>) => void = async (msg: Message) => {
+    // Is not a bot
     if (msg.author.bot) return;
+
+    // Is a participant
+    if (!this.hasSojourn(msg.author.username)) {
+      return;
+    }
+
     if (this.inboundCollector === null) {
       throw new Error('Inbound collector is somehow null.');
     }
