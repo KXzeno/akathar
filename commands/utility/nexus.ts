@@ -30,6 +30,7 @@ export const command = {
 
 		let nexus = new Nexus(interaction, guildInput, reason);
 		let targetChannel = nexus.getChannelTarget();
+
 		if (targetChannel) {
 			let sendable = nexus.isChannelSendable(targetChannel);
 			if (!sendable) {
@@ -38,9 +39,13 @@ export const command = {
 			}
 
 			if (!targetChannel) throw new Error('Unable to find system / sendable channel');
-			if (!interaction.channel) throw new Error('Unable to find caller\'s channel');
+
+			let sourceChannel = nexus.getSourceChannel();
+
+			if (!sourceChannel) throw new Error('Unable to find caller\'s channel');
 
 			transmitReq.execute({ interaction, nexus });
+
 			if (nexus.outboundCollector === null) {
 				throw new Error('Outbound collector not initialized');
 			}
@@ -48,8 +53,6 @@ export const command = {
 			if (nexus.inboundCollector === null) {
 				throw new Error('Inbound collector not initialized');
 			}
-
-			// Type?
 
 			nexus.outboundCollector.on('collect', nexus.outCollectorFn);
 
