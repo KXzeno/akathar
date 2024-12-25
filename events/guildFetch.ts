@@ -1,15 +1,10 @@
 import { Client, Collection, Events, Guild } from 'discord.js';
 
+import { GuildData } from '../utils/types.ts';
+
 // Runs once when client is ready
 // The distinction between `client: Client<boolean>` and `readyClient: Client<true>` is important for TypeScript developers.
 // It makes some properties non-nullable.
-
-type GuildData = {
-  data: Guild;
-  name: string;
-  id: string;
-  defaultChannel: string | undefined;
-}
 
 export const event = {
   name: Events.ClientReady,
