@@ -40,26 +40,7 @@ export const command = {
 			if (!targetChannel) throw new Error('Unable to find system / sendable channel');
 			if (!interaction.channel) throw new Error('Unable to find caller\'s channel');
 
-			let webhooks = new WebhookManager();
-
-			// Type?
-			let outCollectorFn: (args_0: Message<boolean>, args_1: Collection<string, Message<boolean>>) => void = async (msg: Message) => {
-				if (msg.author.bot) return;
-				if (await webhooks.has(msg.author.username, targetChannel as TextChannel) === false) {
-					await webhooks.add(msg, targetChannel as TextChannel);
-				}
-				let webhook = webhooks.get(msg.author.username, targetChannel as TextChannel);
-				// console.log(`From ${msg.channel} to ${targetChannel}, outbound`);
-				await WebhookManager.fire(webhook, msg);
-
-				if (msg.content === '$cancel') {
-					Nexus.terminate(nexus);
-					WebhookManager.cleanse(webhooks, nexus).catch(err => console.error(err));
-					webhooks.eradicate();
-				}
-			};
-
-			transmitReq.execute({ interaction, nexus, targetChannel, reason });
+			transmitReq.execute({ interaction, nexus });
 			if (nexus.outboundCollector === null) {
 				throw new Error('Outbound collector not initialized');
 			}
@@ -68,21 +49,10 @@ export const command = {
 				throw new Error('Inbound collector not initialized');
 			}
 
-			nexus.outboundCollector.on('collect', outCollectorFn);
+			// Type?
 
-			nexus.inboundCollector.on('collect', async (msg: Message) => {
-				if (msg.author.bot) return;
-				if (await webhooks.has(msg.author.username, interaction.channel as TextChannel) === false) {
-					await webhooks.add(msg, interaction.channel as TextChannel);
-				}
-				// console.log(`From ${msg.channel} to ${interaction.channel}, inbound`);
-				await WebhookManager.fire(webhooks.get(msg.author.username, interaction.channel as TextChannel), msg);
-				if (msg.content === '$cancel') {
-					Nexus.terminate(nexus);
-					WebhookManager.cleanse(webhooks, nexus).catch(err => console.error(err));
-					webhooks.eradicate();
-				}
-			});
+			nexus.outboundCollector.on('collect', nexus.outCollectorFn);
+
 
 			interaction.reply(`Connected to server: ${guildInput}`);
 		}
