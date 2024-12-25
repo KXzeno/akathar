@@ -10,7 +10,8 @@ type NexusProps = {
 export const command = {
 	data: new SlashCommandBuilder()
 	.setName('cerebrate')
-	.setDescription('connect to an external server'),
+	.setDescription('connect to an external server')
+	.setDefaultMemberPermissions(0),
 	async execute(props: NexusProps) {
 		let { interaction, nexus } = props;
 		if (!interaction.guild) throw new Error('Caller\'s guild undetected.');
