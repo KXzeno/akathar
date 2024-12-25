@@ -72,6 +72,31 @@ export const command = {
 					if (nexus.inboundCollector === null) {
 						throw new Error('Collector failed to initialize');
 					}
+
+					if (nexus.hasSojourn(btn.user.username)) {
+						let reply = await btn.reply({ content: 'You\'ve already joined.\'', ephemeral: true });
+						setTimeout(() => reply.delete(), 5000);
+						return;
+					}
+
+					nexus.setSojourns(btn.user.username);
+
+					if (inBtnCollector.collected.size > 1) {
+						let embedData = embed.data;
+						if (embedData === null) {
+							throw new Error('Received nullish embed');
+						}
+						let embedDataFields = embed.data.fields ?? null;
+						if (embedDataFields === null) {
+							throw new Error('Received empty embed fields');
+						}
+						embedDataFields[0].value = `${embedDataFields[0].value}, ${btn.user.username}`
+						await btn.update({
+							embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
+						});
+						return;
+					}
+
 					let reply = await btn.reply({ content: 'Joined.', ephemeral: true });
 					nexus.inboundCollector.on('collect', nexus.inCollectorFn);
 					setTimeout(() => reply.delete(), 5000);
@@ -88,13 +113,13 @@ export const command = {
 					menuSelectCollector.on('collect', async selection => {
 						let selectedChannelId = selection.values[0];
 						let selectedChannel: TextChannel | undefined = selection.channels.get(selectedChannelId) as TextChannel;
-						// TODO: Check if sendable
+
 						if (!selectedChannel) return;
 
 						let res = await relocation.fetch();
 
 						let relocatedEmbed = selectedChannel.send({ 
-							components: [row1.setComponents(connect, leave)],
+							components: [row1.setComponents(connect, leave, relocate)],
 							embeds: res.embeds
 						});
 
@@ -119,6 +144,33 @@ export const command = {
 					break;
 				}
 				case 'leave': {
+					await nexus.webhookController.remove(btn.user.username, nexus.getSourceChannel())
+					.catch(err => {
+						console.error(`ERR: ${err}\nThere may be no sojourns listed.`);
+					});
+
+					let embedData = embed.data;
+					if (embedData === null) {
+						throw new Error('Received nullish embed');
+					}
+					let embedDataFields = embed.data.fields ?? null;
+					if (embedDataFields === null) {
+						throw new Error('Received empty embed fields');
+					}
+
+					let pattern: RegExp = /(?:${btn.user.username}\, |, ${btn.user.username}|${btn.user.username})/;
+
+					embedDataFields[0].value = `${embedDataFields[0].value.replace(pattern, '')}`;
+
+					await btn.update({
+						embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
+					});
+
+					try {
+						nexus.removeSojourn(btn.user.username);
+					} catch (err) {
+						console.error(err);
+					}
 					break;
 				}
 			}
@@ -151,9 +203,31 @@ export const command = {
 				outBtnCollector = outRes.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3600000 });
 				outBtnCollector.on('collect', async btn => {
 					switch (btn.customId) {
-						case 'join': {
-							btn.channel?.send('You used \'Join\'');
+						case 'connect': {
+							if (nexus.hasSojourn(btn.user.username)) {
+								await btn.reply({ content: 'You\'ve already joined.\'', ephemeral: true });
+								return;
+							}
+
+							nexus.setSojourns(btn.user.username);
 							let reply = await btn.reply({ content: 'Joined.', ephemeral: true });
+
+							let embedData = embed.data;
+							if (embedData === null) {
+								throw new Error('Received nullish embed');
+							}
+							let embedDataFields = embed.data.fields ?? null;
+							if (embedDataFields === null) {
+								throw new Error('Received empty embed fields');
+							}
+							console.log(`OLD VALUE: ${embedDataFields[0].value}`);
+							embedDataFields[0].value = `${embedDataFields[0].value}, ${btn.user.username}`
+							console.log(`OLD VALUE: ${embedDataFields[0].value}`);
+
+							await btn.update({
+								embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
+							});
+
 							setTimeout(() => reply.delete(), 5000);
 							break;
 						}
@@ -168,13 +242,13 @@ export const command = {
 							menuSelectCollector.on('collect', async selection => {
 								let selectedChannelId = selection.values[0];
 								let selectedChannel: TextChannel | undefined = selection.channels.get(selectedChannelId) as TextChannel;
-								// TODO: Check if sendable
+
 								if (!selectedChannel) return;
 
 								let res = await relocation.fetch();
 
 								let relocatedEmbed = selectedChannel.send({ 
-									components: [row1.setComponents(connect, leave)],
+									components: [row1.setComponents(connect, leave, relocate)],
 									embeds: res.embeds
 								});
 
@@ -203,7 +277,38 @@ export const command = {
 							break;
 						}
 						case 'leave': {
-							btn.channel?.send('You used \'Leave\'');
+							let targetChannel = nexus.getChannelTarget();
+							if (targetChannel === null) {
+								throw new Error('Channel target is not initialized');
+							}
+							await nexus.webhookController.remove(btn.user.username, targetChannel)
+							.catch(err => {
+								console.error(`ERR: ${err}\nThere may be no sojourns listed.`);
+							});
+
+							try {
+								nexus.removeSojourn(btn.user.username);
+							} catch (err) {
+								console.error(err);
+							}
+
+							let embedData = embed.data;
+							if (embedData === null) {
+								throw new Error('Received nullish embed');
+							}
+							let embedDataFields = embed.data.fields ?? null;
+							if (embedDataFields === null) {
+								throw new Error('Received empty embed fields');
+							}
+							let pattern: RegExp = /(?:${btn.user.username}\, |, ${btn.user.username}|${btn.user.username})/;
+
+							console.log(`OLD VALUE: ${embedDataFields[1].value}`);
+							embedDataFields[1].value = `${embedDataFields[1].value.replace(pattern, '')}`;
+							console.log(`NEW VALUE: ${embedDataFields[1].value}`);
+
+							await btn.update({
+								embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
+							});
 							break;
 						}
 					}
