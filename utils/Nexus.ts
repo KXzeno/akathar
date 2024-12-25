@@ -1,6 +1,7 @@
 // TODO: Enable hypertoggling for >15 webhooks
+// TODO: On timed deletions, handle exception where msg is prematurely deleted
 
-import {  ChatInputCommandInteraction, Collection, Guild, Message, MessageCollector, PermissionsBitField, SlashCommandBuilder, TextChannel, Webhook } from 'discord.js';
+import {  ChatInputCommandInteraction, Collection, Guild, Message, MessageCollector, PermissionsBitField, TextChannel } from 'discord.js';
 
 import { event as guildFetch } from '../events/guildFetch.ts';
 import { WebhookManager } from './index.ts';
@@ -56,7 +57,20 @@ export class Nexus {
     return this.inboundCollector = new MessageCollector(this.targetChannel);
   }
 
-  public terminate() {
+  public terminate(): void {
+    if (this.capacity() === 0) {
+      // Already have custom dispatch msg on denial
+      this.outboundCollector?.stop();
+      this.inboundCollector?.stop();
+      let denialMsg = (this.sourceChannel as TextChannel).send({ content: `### Request Denied.` }).then((msgRef) => {
+        let deletionMsgRef = msgRef.reply({ content: `-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 10}:R>` });
+        setTimeout(() => {
+          msgRef.delete();
+          deletionMsgRef.then(ref => ref.delete());
+        }, 10000);
+      });
+      return;
+    }
     (this.sourceChannel as TextChannel).send('Connection terminated.');
     this.targetChannel!.send('Connection terminated.');
     this.outboundCollector?.stop();
@@ -252,14 +266,16 @@ export class Nexus {
       await this.webhookController.add(msg, this.targetChannel as TextChannel);
     }
     let webhook = this.webhookController.get(msg.author.username, this.targetChannel as TextChannel);
-    // console.log(`From ${msg.channel} to ${targetChannel}, outbound`);
-    await WebhookManager.fire(webhook, msg);
 
     if (msg.content === '$cancel') {
       this.terminate();
       WebhookManager.cleanse(this.webhookController, this).catch(err => console.error(err));
       this.webhookController.eradicate();
+      return;
     }
+    // console.log(`From ${msg.channel} to ${targetChannel}, outbound`);
+    await WebhookManager.fire(webhook, msg);
+
   };
 
   public inCollectorFn: (args_0: Message<boolean>, args_1: Collection<string, Message<boolean>>) => void = async (msg: Message) => {
@@ -281,13 +297,15 @@ export class Nexus {
     if (await this.webhookController.has(msg.author.username, this.sourceChannel as TextChannel) === false) {
       await this.webhookController.add(msg, this.sourceChannel as TextChannel);
     }
-    // console.log(this.webhookController);
-    // console.log(`From ${msg.channel} to ${interaction.channel}, inbound`);
-    await WebhookManager.fire(this.webhookController.get(msg.author.username, this.sourceChannel as TextChannel), msg);
+
     if (msg.content === '$cancel') {
       this.terminate();
       WebhookManager.cleanse(this.webhookController, this).catch(err => console.error(err));
       this.webhookController.eradicate();
+      return;
     }
+    // console.log(this.webhookController);
+    // console.log(`From ${msg.channel} to ${interaction.channel}, inbound`);
+    await WebhookManager.fire(this.webhookController.get(msg.author.username, this.sourceChannel as TextChannel), msg);
   };
 }
