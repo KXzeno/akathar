@@ -1,10 +1,16 @@
 // TODO: Enable hypertoggling for >15 webhooks
 // TODO: On timed deletions, handle exception where msg is prematurely deleted
+// TODO: Disable self-guild calls
 
 import {  ChatInputCommandInteraction, Collection, Guild, Message, MessageCollector, PermissionsBitField, TextChannel } from 'discord.js';
 
 import { event as guildFetch } from '../events/guildFetch.ts';
 import { WebhookManager } from './index.ts';
+
+export type Sojourn = {
+  name: string;
+  guild: Guild;
+}
 
 export class Nexus {
   private interaction: ChatInputCommandInteraction;
@@ -16,7 +22,7 @@ export class Nexus {
   private botId: string;
   private targetGuild: Guild | null = null;
   private targetChannel: TextChannel | null = null;
-  private sojourns: string[] = [];
+  private sojourns: Sojourn[] = [];
   public outboundCollector: MessageCollector | null = null;
   public inboundCollector: MessageCollector | null = null;
   public webhookController: WebhookManager = new WebhookManager();
@@ -71,17 +77,20 @@ export class Nexus {
       });
       return;
     }
+    let channelNames: string[] = [];
+    let disparateChannels: number = 0;
+
     (this.sourceChannel as TextChannel).send('Connection terminated.');
     this.targetChannel!.send('Connection terminated.');
     this.outboundCollector?.stop();
     this.inboundCollector?.stop();
   }
 
-  public getSojourns(): string[] {
+  public getSojourns(): Sojourn[] {
     return this.sojourns;
   }
 
-  public setSojourns(...args: string[]): string[] | void {
+  public setSojourns(...args: Sojourn[]): Sojourn[] | void {
     if (args.length === 1) {
       if (this.hasSojourn(args[0])) {
         console.error('User is already participating.');
@@ -93,17 +102,17 @@ export class Nexus {
     return this.sojourns = [...args];
   }
 
-  public removeSojourn(sojournInput: string): void {
+  public removeSojourn(sojournInput: Sojourn): void {
     let prevCount = this.capacity();
-    this.sojourns = this.sojourns.filter(sojourn => sojourn.toUpperCase() !== sojournInput.toUpperCase());
+    this.sojourns = this.sojourns.filter(sojourn => sojourn.name.toUpperCase() !== sojournInput.name.toUpperCase());
     let newCount = this.capacity();
     if (prevCount === newCount) {
       throw new Error('User does not exist in the nexus.');
     }
   }
 
-  public hasSojourn(sojournInput: string): boolean {
-    let sojournIndex = this.sojourns.findIndex(sojourn => sojourn.toUpperCase() === sojournInput.toUpperCase());
+  public hasSojourn(sojournInput: Sojourn): boolean {
+    let sojournIndex = this.sojourns.findIndex(sojourn => sojourn.name.toUpperCase() === sojournInput.name.toUpperCase());
     if (sojournIndex === -1) {
       return false;
     } else {
@@ -250,7 +259,16 @@ export class Nexus {
     if (msg.author.bot) return;
 
     // Is a participant
-    if (!this.hasSojourn(msg.author.username)) {
+    let sojourn: Sojourn = {
+      name: msg.author.username,
+      guild: msg.guild!,
+    }
+
+    if (sojourn.guild === null) {
+      throw new Error('Cannot parse user\'s guild.');
+    }
+
+    if (!this.hasSojourn(sojourn)) {
       return;
     }
 
@@ -283,7 +301,16 @@ export class Nexus {
     if (msg.author.bot) return;
 
     // Is a participant
-    if (!this.hasSojourn(msg.author.username)) {
+    let sojourn: Sojourn = {
+      name: msg.author.username,
+      guild: msg.guild!,
+    }
+
+    if (sojourn.guild === null) {
+      throw new Error('Cannot parse user\'s guild.');
+    }
+
+    if (!this.hasSojourn(sojourn)) {
       return;
     }
 
