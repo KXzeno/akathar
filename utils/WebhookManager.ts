@@ -23,7 +23,9 @@ export class WebhookManager {
     let channelOneWebhooks = await channelOne.fetchWebhooks();
     let channelTwoWebhooks = await (channelTwo as TextChannel).fetchWebhooks();
     let deleted: number = 0;
+
     console.log(`One: ${channelOneWebhooks.size}\nTwo: ${channelTwoWebhooks.size}`);
+
     if (!(channelOneWebhooks.size > 0)) {
       for (let [_, wh] of channelOneWebhooks) {
         if (await webhooks.has(wh.name)) {
@@ -88,8 +90,10 @@ export class WebhookManager {
 
   public async add(msgData: Message, channel: TextChannel): Promise<Webhook | void> {
     let user = msgData.author;
+
     // method refers to user; cannot destructure
     let { username, displayAvatarURL: getAvatar } = user;
+
     let existingIndex: number = this.webhooks.findIndex(webhook => webhook.name.toUpperCase() === username.toUpperCase() && webhook.channelId === channel.id);
     if (existingIndex === -1) {
       let newWebhook = await channel.createWebhook({
