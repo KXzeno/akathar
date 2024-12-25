@@ -5,8 +5,6 @@ import { Nexus } from "../../utils/index.ts";
 type NexusProps = {
 	interaction: ChatInputCommandInteraction;
 	nexus: Nexus;
-	targetChannel: TextChannel;
-	reason: string | null;
 }
 
 export const command = {
@@ -14,7 +12,10 @@ export const command = {
 	.setName('cerebrate')
 	.setDescription('connect to an external server'),
 	async execute(props: NexusProps) {
-		if (!props.interaction.guild) throw new Error('Caller\'s guild undetected.');
+		let { interaction, nexus } = props;
+		if (!interaction.guild) throw new Error('Caller\'s guild undetected.');
+		let targetChannel = nexus.getChannelTarget();
+		if (targetChannel === null) throw new Error('No channel target');
 
 		let connect = new ButtonBuilder()
 		.setCustomId('connect')
@@ -42,10 +43,10 @@ export const command = {
 		let embed = new EmbedBuilder()
 		.setTitle('Connection Request')
 		.setAuthor({
-			name: props.interaction.guild.name,
-			iconURL: props.interaction.guild.iconURL() as string
+			name: interaction.guild.name,
+			iconURL: interaction.guild.iconURL() as string
 		})
-		.setDescription(`${props.interaction.user.username} sent a connection request${props.reason !== null ? `:\n"${props.reason}"` : ''}`);
+		.setDescription(`${props.interaction.user.username} sent a connection request${nexus.getReason() !== null ? `:\n"${nexus.getReason()}"` : ''}`);
 
 		let channelSelect = new ChannelSelectMenuBuilder()
 		.setCustomId('channels')
@@ -55,7 +56,7 @@ export const command = {
 		let row2 = new ActionRowBuilder<ChannelSelectMenuBuilder>()
 		.addComponents(channelSelect);
 
-		let res = await props.targetChannel.send({ 
+		let res = await targetChannel.send({ 
 			components: [row1],
 			embeds: [embed]
 		});
@@ -96,10 +97,12 @@ export const command = {
 						if (selection.channel === null) return;
 
 						// Update nexus variables
-						if (props.nexus.outboundCollector === null) {
+						if (nexus.outboundCollector === null) {
 							throw new Error('Outbound collecor not initialized');
 						}
-						props.targetChannel = props.nexus.outboundCollector.channel = props.nexus.setChannelTarget(selectedChannel);
+						targetChannel /*= nexus.outboundCollector.channel*/ = props.nexus.setChannelTarget(selectedChannel);
+						await nexus.redirectOutboundCollector(selectedChannel);
+						await nexus.redirectInboundCollector(selectedChannel);
 						let notice = await selection.reply({ content: `Moved to <#${selectedChannelId}>\n-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 5}:R>` });
 						menuSelectCollector.stop();
 						setTimeout(async () => {
@@ -119,19 +122,19 @@ export const command = {
 					],
 					embeds: [embed.addFields(
 						{
-							name: props.targetChannel.guild.name, 
+							name: targetChannel!.guild.name, 
 							value: btn.user.username,
 							inline: true
 						},
 						{
-							name: props.interaction.guild!.name,
-							value: props.interaction.user.username,
+							name: interaction.guild!.name,
+							value: interaction.user.username,
 							inline: true
 						})
 						.setTitle('Connection Established')],
 				});
 
-				let received = await (props.interaction.channel as TextChannel).send({
+				let received = await (interaction.channel as TextChannel).send({
 					components: [row1.setComponents(connect, leave, relocate)],
 					embeds: [embed.setTitle('Connection Established').setDescription(null)]
 				});
