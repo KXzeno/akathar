@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, ButtonBuilder, ActionRowBuilder, ButtonStyle, EmbedBuilder, MessageCollector, ComponentType, ChannelSelectMenuBuilder, ChannelType, InteractionCollector, ChannelSelectMenuInteraction, ButtonInteraction, Webhook, Message, Collection } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, ButtonBuilder, ActionRowBuilder, ButtonStyle, EmbedBuilder, ComponentType, ChannelSelectMenuBuilder, ChannelType, InteractionCollector, ChannelSelectMenuInteraction, ButtonInteraction, Message } from "discord.js";
 
 import { Nexus } from "../../utils/index.ts";
 
@@ -66,20 +66,29 @@ export const command = {
 
 		let inBtnCollector: InteractionCollector<ButtonInteraction<'cached'>> = res.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3600000 });
 
-		inBtnCollector.on('collect', async btn => {
-			switch (btn.customId) {
+		inBtnCollector.on('collect', async inBtn => {
+			switch (inBtn.customId) {
+				case 'deny' : {
+					await res.edit({
+						components: [row1.setComponents(connect.setDisabled(), deny.setDisabled())],
+						embeds: [embed.setTitle(`Connection Request Rejected`).setDescription(`${embed.data.description}, **rejected by ${inBtn.user.username}**.`)]
+					});
+					await inBtn.reply('Connection rejected. Anonymity is given against the caller.');
+					nexus.terminate();
+					break;
+				}
 				case 'connect' : {
 					if (nexus.inboundCollector === null) {
 						throw new Error('Collector failed to initialize');
 					}
 
-					if (nexus.hasSojourn(btn.user.username)) {
-						let reply = await btn.reply({ content: 'You\'ve already joined.\'', ephemeral: true });
+					if (nexus.hasSojourn(inBtn.user.username)) {
+						let reply = await inBtn.reply({ content: 'You\'ve already joined.', ephemeral: true });
 						setTimeout(() => reply.delete(), 5000);
 						return;
 					}
 
-					nexus.setSojourns(btn.user.username);
+					nexus.setSojourns(inBtn.user.username);
 
 					if (inBtnCollector.collected.size > 1) {
 						let embedData = embed.data;
@@ -90,20 +99,28 @@ export const command = {
 						if (embedDataFields === null) {
 							throw new Error('Received empty embed fields');
 						}
-						embedDataFields[0].value = `${embedDataFields[0].value}, ${btn.user.username}`
-						await btn.update({
+
+						embedDataFields[0].value = `${embedDataFields[0].value}, ${inBtn.user.username}`
+						await inBtn.update({
+							embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
+						});
+
+						if (outRes === null) {
+							throw new Error('Outbound embed failed to construct.');
+						}
+						await outRes.edit({
 							embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
 						});
 						return;
 					}
 
-					let reply = await btn.reply({ content: 'Joined.', ephemeral: true });
+					let reply = await inBtn.reply({ content: 'Joined.', ephemeral: true });
 					nexus.inboundCollector.on('collect', nexus.inCollectorFn);
 					setTimeout(() => reply.delete(), 5000);
 					break;
 				}
 				case 'relocate': {
-					let relocation = await btn.update({
+					let relocation = await inBtn.update({
 						components: [
 							row1.setComponents(connect, leave, relocate.setDisabled()),
 							row2,
@@ -144,7 +161,11 @@ export const command = {
 					break;
 				}
 				case 'leave': {
-					await nexus.webhookController.remove(btn.user.username, nexus.getSourceChannel())
+					if (nexus.hasSojourn(inBtn.user.username) === false) {
+						inBtn.reply({ content: `You have not joined.`, ephemeral: true });
+						return;
+					}
+					await nexus.webhookController.remove(inBtn.user.username, nexus.getSourceChannel())
 					.catch(err => {
 						console.error(`ERR: ${err}\nThere may be no sojourns listed.`);
 					});
@@ -158,16 +179,51 @@ export const command = {
 						throw new Error('Received empty embed fields');
 					}
 
-					let pattern: RegExp = /(?:${btn.user.username}\, |, ${btn.user.username}|${btn.user.username})/;
+					let pattern: RegExp = new RegExp(`(?:${inBtn.user.username}\, |\, ${inBtn.user.username}|${inBtn.user.username})`);
 
 					embedDataFields[0].value = `${embedDataFields[0].value.replace(pattern, '')}`;
 
-					await btn.update({
+					if (embedDataFields[0].value.length < 1) {
+						nexus.terminate();
+						nexus.webhookController.eradicate();
+						let isolatedField = embedDataFields[1];
+						let terminationEmbed = await inBtn.update({
+							embeds: [embed.setFields(isolatedField)],
+							components: [
+								row1.setComponents(connect.setDisabled(), leave.setDisabled(), relocate.setDisabled()),
+							],
+						})
+						let inTerminationMsg = await terminationEmbed.fetch().then(res => res.reply({ content: `### Connection terminated by default\n-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 10}:R>`   }));
+
+						setTimeout(() => {
+							inTerminationMsg.delete();
+							terminationEmbed.delete();
+						}, 10000);
+
+						if (outRes === null) return;
+
+						let terminatingEmbed = await outRes.edit({ 
+							embeds: [embed.setFields(isolatedField)],
+							components: [
+								row1.setComponents(connect.setDisabled(), leave.setDisabled(), relocate.setDisabled()),
+							],
+						});
+
+						let outTerminationMsg = await terminatingEmbed.reply({ content: `### Connection terminated by default\n-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 10}:R>`   });
+
+						setTimeout(() => {
+							outTerminationMsg.delete();
+							terminatingEmbed.delete();
+						}, 10000);
+						return;
+					}
+
+					await inBtn.update({
 						embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
 					});
 
 					try {
-						nexus.removeSojourn(btn.user.username);
+						nexus.removeSojourn(inBtn.user.username);
 					} catch (err) {
 						console.error(err);
 					}
@@ -175,7 +231,7 @@ export const command = {
 				}
 			}
 
-			if (inBtnCollector.collected.size === 1) {
+			if (nexus.inboundCollector === null || (nexus.inboundCollector.ended && nexus.inboundCollector.collected.size === 1)) {
 				let postConnectEmbed = await res.edit({
 					components: [
 						row1.setComponents(connect, leave, relocate),
@@ -184,7 +240,7 @@ export const command = {
 					embeds: [embed.addFields(
 						{
 							name: targetChannel!.guild.name, 
-							value: btn.user.username,
+							value: inBtn.user.username,
 							inline: true
 						},
 						{
@@ -201,16 +257,16 @@ export const command = {
 				});
 
 				outBtnCollector = outRes.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3600000 });
-				outBtnCollector.on('collect', async btn => {
-					switch (btn.customId) {
+				outBtnCollector.on('collect', async outBtn => {
+					switch (outBtn.customId) {
 						case 'connect': {
-							if (nexus.hasSojourn(btn.user.username)) {
-								await btn.reply({ content: 'You\'ve already joined.\'', ephemeral: true });
+							if (nexus.hasSojourn(outBtn.user.username)) {
+								await outBtn.reply({ content: 'You\'ve already joined.', ephemeral: true });
 								return;
 							}
 
-							nexus.setSojourns(btn.user.username);
-							let reply = await btn.reply({ content: 'Joined.', ephemeral: true });
+							nexus.setSojourns(outBtn.user.username);
+							let reply = await outBtn.reply({ content: 'Joined.', ephemeral: true });
 
 							let embedData = embed.data;
 							if (embedData === null) {
@@ -221,10 +277,10 @@ export const command = {
 								throw new Error('Received empty embed fields');
 							}
 							console.log(`OLD VALUE: ${embedDataFields[0].value}`);
-							embedDataFields[0].value = `${embedDataFields[0].value}, ${btn.user.username}`
+							embedDataFields[0].value = `${embedDataFields[0].value}, ${outBtn.user.username}`
 							console.log(`OLD VALUE: ${embedDataFields[0].value}`);
 
-							await btn.update({
+							await outBtn.update({
 								embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
 							});
 
@@ -232,7 +288,7 @@ export const command = {
 							break;
 						}
 						case 'relocate': {
-							let relocation = await btn.update({
+							let relocation = await outBtn.update({
 								components: [
 									row1.setComponents(connect, leave, relocate.setDisabled()),
 									row2,
@@ -277,17 +333,22 @@ export const command = {
 							break;
 						}
 						case 'leave': {
+							if (nexus.hasSojourn(outBtn.user.username) === false) {
+								outBtn.reply({ content: `You have not joined.`, ephemeral: true });
+								return;
+							}
+
 							let targetChannel = nexus.getChannelTarget();
 							if (targetChannel === null) {
 								throw new Error('Channel target is not initialized');
 							}
-							await nexus.webhookController.remove(btn.user.username, targetChannel)
+							await nexus.webhookController.remove(outBtn.user.username, targetChannel)
 							.catch(err => {
 								console.error(`ERR: ${err}\nThere may be no sojourns listed.`);
 							});
 
 							try {
-								nexus.removeSojourn(btn.user.username);
+								nexus.removeSojourn(outBtn.user.username);
 							} catch (err) {
 								console.error(err);
 							}
@@ -300,13 +361,56 @@ export const command = {
 							if (embedDataFields === null) {
 								throw new Error('Received empty embed fields');
 							}
-							let pattern: RegExp = /(?:${btn.user.username}\, |, ${btn.user.username}|${btn.user.username})/;
+
+							let pattern: RegExp = new RegExp(`(?:${outBtn.user.username}\, |\, ${outBtn.user.username}|${outBtn.user.username})`);
 
 							console.log(`OLD VALUE: ${embedDataFields[1].value}`);
 							embedDataFields[1].value = `${embedDataFields[1].value.replace(pattern, '')}`;
 							console.log(`NEW VALUE: ${embedDataFields[1].value}`);
 
-							await btn.update({
+							if (embedDataFields[1].value.length < 1) {
+								nexus.terminate();
+								nexus.webhookController.eradicate();
+
+								let isolatedField = embedDataFields[0];
+
+								let terminationEmbed = await inBtn.update({
+									embeds: [embed.setFields(isolatedField)],
+									components: [
+										row1.setComponents(connect.setDisabled(), leave.setDisabled(), relocate.setDisabled()),
+									],
+								})
+
+								let inTerminationMsg = await terminationEmbed.fetch().then(res => res.reply({ content: `### Connection terminated by default\n-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 10}:R>`   }));
+
+								setTimeout(() => {
+									inTerminationMsg.delete();
+									terminationEmbed.delete();
+								}, 10000);
+
+								if (outRes === null) return;
+
+								await outBtn.update({ 
+									embeds: [embed.setFields(isolatedField)],
+									components: [
+										row1.setComponents(connect.setDisabled(), leave.setDisabled(), relocate.setDisabled()),
+									],
+								})
+
+								let outTerminationMsg = await terminationEmbed.fetch().then(res => res.reply({ content: `### Connection terminated by default\n-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 10}:R>`   }));
+
+								setTimeout(() => {
+									outTerminationMsg.delete();
+									outBtn.fetchReply().then(reply => reply.delete()).catch(err => console.error(`ERR: ${err}`));
+								}, 10000);
+								return;
+							}
+
+							await outBtn.update({
+								embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
+							});
+
+							await inBtn.update({
 								embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
 							});
 							break;
