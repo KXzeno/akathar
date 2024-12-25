@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 
-import { Nexus } from "../../utils/Nexus.ts";
+import { Nexus } from "../../utils/index.ts";
 import { command as transmitReq } from './cerebrate.ts';
 
 // TODO: IMPLEMENT GENERAL IDENTITY AND ESTABLISH GUILD IDENTITY GUILD LIST
