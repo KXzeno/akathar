@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, TextChannel, ButtonBuilder, ActionRowBuilder, ButtonStyle, EmbedBuilder, ComponentType, ChannelSelectMenuBuilder, ChannelType, InteractionCollector, ChannelSelectMenuInteraction, ButtonInteraction, Message } from "discord.js";
 
-import { Nexus, Sojourn } from "../../utils/index.ts";
+import { Nexus } from "../../utils/index.ts";
+import { Sojourn } from "../../utils/types.ts";
 
 type NexusProps = {
 	interaction: ChatInputCommandInteraction;
@@ -68,12 +69,12 @@ export const command = {
 		let inBtnCollector: InteractionCollector<ButtonInteraction<'cached'>> = res.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3600000 });
 
 		inBtnCollector.on('collect', async inBtn => {
-			let sojourn: Sojourn = {
+			let inboundSojourn: Sojourn = {
 				name: inBtn.user.username,
 				guild: inBtn.guild!,
 			}
 
-			if (sojourn.guild === null) {
+			if (inboundSojourn.guild === null) {
 				throw new Error('Unable to parse user\'s guild.');
 			}
 			switch (inBtn.customId) {
@@ -91,13 +92,13 @@ export const command = {
 						throw new Error('Collector failed to initialize');
 					}
 
-					if (nexus.hasSojourn(sojourn)) {
+					if (nexus.hasSojourn(inboundSojourn)) {
 						let reply = await inBtn.reply({ content: 'You\'ve already joined.', ephemeral: true });
 						setTimeout(() => reply.delete(), 5000);
 						return;
 					}
 
-					nexus.setSojourns(sojourn);
+					nexus.setSojourns(inboundSojourn);
 
 					if (inBtnCollector.collected.size > 1) {
 						let embedData = embed.data;
@@ -170,13 +171,13 @@ export const command = {
 					break;
 				}
 				case 'leave': {
-					if (nexus.hasSojourn(sojourn) === false) {
+					if (nexus.hasSojourn(inboundSojourn) === false) {
 						inBtn.reply({ content: `You have not joined.`, ephemeral: true });
 						return;
 					}
 					await nexus.webhookController.remove(inBtn.user.username, nexus.getSourceChannel())
 					.catch(err => {
-						console.error(`ERR: ${err}\nThere may be no sojourns listed.`);
+						console.error(`ERR: ${err}\nThere may be no inboundSojourns listed.`);
 					});
 
 					let embedData = embed.data;
@@ -191,6 +192,13 @@ export const command = {
 					let pattern: RegExp = new RegExp(`(?:${inBtn.user.username}\, |\, ${inBtn.user.username}|${inBtn.user.username})`);
 
 					embedDataFields[0].value = `${embedDataFields[0].value.replace(pattern, '')}`;
+
+
+					try {
+						nexus.removeSojourn(inboundSojourn);
+					} catch (err) {
+						console.error(err);
+					}
 
 					if (embedDataFields[0].value.length < 1) {
 						nexus.terminate();
@@ -230,12 +238,6 @@ export const command = {
 					await inBtn.update({
 						embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
 					});
-
-					try {
-						nexus.removeSojourn(sojourn);
-					} catch (err) {
-						console.error(err);
-					}
 					break;
 				}
 			}
@@ -258,7 +260,7 @@ export const command = {
 							inline: true
 						})
 						.setTitle('Connection Established')],
-				}).then(() => nexus.setSojourns(sojourn, { name: interaction.user.username, guild: interaction.guild! }));
+				}).then(() => nexus.setSojourns(inboundSojourn, { name: interaction.user.username, guild: interaction.guild! }));
 
 				outRes = await (nexus.getSourceChannel() as TextChannel).send({
 					components: [row1.setComponents(connect, leave, relocate)],
@@ -267,23 +269,23 @@ export const command = {
 
 				outBtnCollector = outRes.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3600000 });
 				outBtnCollector.on('collect', async outBtn => {
-					let sojourn: Sojourn = {
+					let outboundSojourn: Sojourn = {
 						name: outBtn.user.username,
 						guild: outBtn.guild!,
 					};
 
-					if (sojourn.guild === null) {
+					if (outboundSojourn.guild === null) {
 						throw new Error('Cannot parse user\'s guild.');
 					}
 
 					switch (outBtn.customId) {
 						case 'connect': {
-							if (nexus.hasSojourn(sojourn)) {
+							if (nexus.hasSojourn(outboundSojourn)) {
 								await outBtn.reply({ content: 'You\'ve already joined.', ephemeral: true });
 								return;
 							}
 
-							nexus.setSojourns(sojourn);
+							nexus.setSojourns(outboundSojourn);
 
 							let reply = await outBtn.reply({ content: 'Joined.', ephemeral: true, fetchReply: false });
 
@@ -295,9 +297,7 @@ export const command = {
 							if (embedDataFields === null) {
 								throw new Error('Received empty embed fields');
 							}
-							console.log(`OLD VALUE: ${embedDataFields[0].value}`);
 							embedDataFields[0].value = `${embedDataFields[0].value}, ${outBtn.user.username}`
-							console.log(`OLD VALUE: ${embedDataFields[0].value}`);
 
 							await outBtn.update({
 								embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
@@ -352,7 +352,7 @@ export const command = {
 							break;
 						}
 						case 'leave': {
-							if (nexus.hasSojourn(sojourn) === false) {
+							if (nexus.hasSojourn(outboundSojourn) === false) {
 								outBtn.reply({ content: `You have not joined.`, ephemeral: true });
 								return;
 							}
@@ -363,7 +363,7 @@ export const command = {
 							}
 							await nexus.webhookController.remove(outBtn.user.username, targetChannel)
 							.catch(err => {
-								console.error(`ERR: ${err}\nThere may be no sojourns listed.`);
+								console.error(`ERR: ${err}\nThere may be no outboundSojourns listed.`);
 							});
 
 							let embedData = embed.data;
@@ -377,9 +377,13 @@ export const command = {
 
 							let pattern: RegExp = new RegExp(`(?:${outBtn.user.username}\, |\, ${outBtn.user.username}|${outBtn.user.username})`);
 
-							console.log(`OLD VALUE: ${embedDataFields[1].value}`);
 							embedDataFields[1].value = `${embedDataFields[1].value.replace(pattern, '')}`;
-							console.log(`NEW VALUE: ${embedDataFields[1].value}`);
+
+							try {
+								nexus.removeSojourn(outboundSojourn);
+							} catch (err) {
+								console.error(err);
+							}
 
 							if (embedDataFields[1].value.length < 1) {
 								nexus.terminate();
@@ -418,13 +422,6 @@ export const command = {
 								}, 10000);
 								return;
 							}
-
-							try {
-								nexus.removeSojourn(sojourn);
-							} catch (err) {
-								console.error(err);
-							}
-
 
 							await outBtn.update({
 								embeds: [embed.setFields(embedDataFields[0], embedDataFields[1])]
