@@ -1,17 +1,12 @@
-import { ChatInputCommandInteraction, Collection, Guild, Message, MessageCollector, PermissionsBitField, SlashCommandBuilder, TextChannel, Webhook } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
 
 import { Nexus } from "../../utils/Nexus.ts";
-import { event as guildFetch } from '../../events/guildFetch.ts';
 import { command as transmitReq } from './cerebrate.ts';
-import { WebhookManager } from "../../utils/index.ts";
 
-type GuildData = {
-	name: string;
-	id: string;
-	defaultChannel: string | undefined;
-}
-
-// TODO: GENERAL IDENTITY AND ESTABLISH GUILD IDENTITY
+// TODO: IMPLEMENT GENERAL IDENTITY AND ESTABLISH GUILD IDENTITY GUILD LIST
+// TODO: IMPLEMENT GUILD LIST STATUSES
+//         - LOCKED / UNLOCKED / LIMITED
+// TODO: Create visual for termination
 
 export const command = {
 	data: new SlashCommandBuilder()
@@ -21,9 +16,11 @@ export const command = {
 	.addStringOption(guild => guild.setName('guild').setDescription('server to transmit').setRequired(true))
 	.addStringOption(reason => reason.setName('reason').setDescription('the reason for contact')),
 	async execute(interaction: ChatInputCommandInteraction) {
-
 		let guildInput: string | null = interaction.options.getString('guild');
-		if (guildInput === null) throw new Error('Unparseable input.');
+
+		if (guildInput === null) {
+			throw new Error('Unparseable input.');
+		}
 
 		// Create connection request
 		let reason = interaction.options.getString('reason') || null;
@@ -38,11 +35,15 @@ export const command = {
 				targetChannel = nexus.getChannelTarget();
 			}
 
-			if (!targetChannel) throw new Error('Unable to find system / sendable channel');
+			if (!targetChannel) {
+				throw new Error('Unable to find system / sendable channel');
+			}
 
 			let sourceChannel = nexus.getSourceChannel();
 
-			if (!sourceChannel) throw new Error('Unable to find caller\'s channel');
+			if (!sourceChannel) {
+				throw new Error('Unable to find caller\'s channel');
+			}
 
 			transmitReq.execute({ interaction, nexus });
 
