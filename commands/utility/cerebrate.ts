@@ -232,7 +232,7 @@ export const command = {
 				}
 			}
 
-			if (nexus.inboundCollector === null || (nexus.inboundCollector.ended && nexus.inboundCollector.collected.size === 1)) {
+			if (!(nexus.inboundCollector === null || nexus.inboundCollector.ended) && nexus.inboundCollector.collected.size === 1) {
 				let postConnectEmbed = await res.edit({
 					components: [
 						row1.setComponents(connect, leave, relocate),
