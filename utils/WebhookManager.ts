@@ -45,6 +45,29 @@ export class WebhookManager {
     });
   }
 
+  public static async transfer(controller: WebhookManager, oldChannel: TextChannel, newChannel: TextChannel): Promise<void> {
+    for (let webhook of controller.webhooks) {
+      if (webhook.channel && webhook.channel.id === oldChannel.id)  {
+        console.log(`Swapped ${webhook.channel.name} to ${newChannel.name}`);
+        controller.addFrom(webhook, newChannel);
+        webhook.delete();
+      }
+    }
+  }
+
+  public async addFrom(webhook: Webhook, channel: TextChannel): Promise<Webhook | void> {
+    let existingIndex: number = this.webhooks.findIndex(webhook => webhook.name.toUpperCase() === webhook.name.toUpperCase() && webhook.channelId === channel.id);
+    if (existingIndex === -1) {
+      let newWebhook = await channel.createWebhook({
+        name: webhook.name,
+        avatar: webhook.avatarURL(),
+      });
+      this.webhooks.push(newWebhook);
+      return newWebhook;
+    }
+    console.log('User is already added.');
+  }
+
   public async add(msgData: Message, channel: TextChannel): Promise<Webhook | void> {
     let user = msgData.author;
     // method refers to user; cannot destructure
@@ -75,6 +98,10 @@ export class WebhookManager {
       }
     }
     return -1;
+  }
+
+  public getSize() {
+    return this.webhooks.length;
   }
 
   public async remove(user: string, channel: TextChannel): Promise<Webhook | void> {
