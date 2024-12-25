@@ -23,34 +23,49 @@ export class WebhookManager {
     let channelOneWebhooks = await channelOne.fetchWebhooks();
     let channelTwoWebhooks = await (channelTwo as TextChannel).fetchWebhooks();
     let deleted: number = 0;
-    for (let [_, wh] of channelOneWebhooks) {
-      if (await webhooks.has(wh.name)) {
-        wh.delete();
-        deleted++;
+    console.log(`One: ${channelOneWebhooks.size}\nTwo: ${channelTwoWebhooks.size}`);
+    if (!(channelOneWebhooks.size > 0)) {
+      for (let [_, wh] of channelOneWebhooks) {
+        if (await webhooks.has(wh.name)) {
+          wh.delete();
+          deleted++;
+        }
       }
     }
-    for (let [_, wh] of channelTwoWebhooks) {
-      if (await webhooks.has(wh.name)) {
-        wh.delete();
-        deleted++;
+    if (!(channelTwoWebhooks.size >0)) {
+      for (let [_, wh] of channelTwoWebhooks) {
+        if (await webhooks.has(wh.name)) {
+          wh.delete();
+          deleted++;
+        }
       }
     }
     return deleted;
   }
 
   public static async fire(webhook: Webhook, msgData: Message) {
-    await webhook.send({
-      content: msgData.content,
-      files: [...msgData.attachments.values() || null],
-    });
+    console.log(webhook.name);
+    console.log(webhook.channel?.name);
+    try {
+      await webhook.send({
+        content: msgData.content,
+        files: [...msgData.attachments.values() || null],
+      });
+    } catch (err) {
+      console.log(`LOGGED NAME: ${webhook.name}`);
+      console.log(`LOGGED CHANNEL NAME: ${webhook.channel?.name}`);
+      console.error(`ERR: ${err}`);
+    }
   }
 
   public static async transfer(controller: WebhookManager, oldChannel: TextChannel, newChannel: TextChannel): Promise<void> {
+    if (!(controller.getSize() > 0)) {
+      console.log('Controller is empty.');
+      return;
+    }
     for (let webhook of controller.webhooks) {
       if (webhook.channel && webhook.channel.id === oldChannel.id)  {
-        console.log(`Swapped ${webhook.channel.name} to ${newChannel.name}`);
-        controller.addFrom(webhook, newChannel);
-        webhook.delete();
+        await controller.addFrom(webhook, newChannel);
       }
     }
   }
@@ -63,6 +78,9 @@ export class WebhookManager {
         avatar: webhook.avatarURL(),
       });
       this.webhooks.push(newWebhook);
+      webhook.delete();
+      let marked = this.webhooks[existingIndex];
+      this.webhooks = this.webhooks.filter(webhook => webhook !== marked);
       return newWebhook;
     }
     console.log('User is already added.');
@@ -113,15 +131,17 @@ export class WebhookManager {
   }
 
   public eradicate(): void {
-    for (let webhook of this.webhooks) {
-      webhook.delete();
+    if (this.webhooks.length > 0) {
+      for (let webhook of this.webhooks) {
+        webhook.delete();
+      }
     }
   }
 
   public async has(identifier: string, channel?: TextChannel): Promise<boolean> {
     // console.log('Function executed.');
     if (channel) {
-    // console.log('Channel detected.');
+      // console.log('Channel detected.');
       for await (let webhook of this.webhooks) {
         // console.log(`Passed: ${webhook.name}`);
         if (webhook.name.toUpperCase() === identifier.toUpperCase()) {
