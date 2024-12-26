@@ -7,7 +7,7 @@ export const command = {
 	.setName('nexus-fetch')
 	.setDescription('fetch available guilds'),
 	async execute(interaction: ChatInputCommandInteraction) {
-		let guildData = Nexus.fetchGuilds();
+		let guildData = await Nexus.fetchGuilds();
 
 		let debriefing = guildData.find(guild => guild.name === 'Debriefing');
 		if (!debriefing) {
