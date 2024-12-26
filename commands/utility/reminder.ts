@@ -42,7 +42,7 @@ export const command = {
       if (typeof globalTimer !== 'number') {
         throw new Error('Timer failed to construct.');
       }
-
+      // TODO: CONFIGURE TIMETABLE TERMINATION EMOJI AND STATUS
       let msgRef = await targetChannel.send(`### ${interaction.user.displayName}'s reminder: \`${content}\`\n${Timer.createTimer(globalTimer)}\n-# WARNING: THIS FEATURE IS UNSTABLE, CURRENTLY ONLY SUPPORTS THE REGEX PATTERN: [DIGITS]m (e.g., 20m)`);
       msgRef.react('✅');
 
@@ -54,6 +54,7 @@ export const command = {
         targetChannel!.send({ content: `<@${interaction.user.id}>`, reply: { messageReference: msgRef.id }});
       }, globalTimer);
     } else {
+      // TODO: CONFIGURE STATUS
       let globalTimer = Timer.parseInputToISO(timer);
       if (typeof globalTimer !== 'number') {
         throw new Error('Timer failed to construct.');
@@ -66,6 +67,7 @@ export const command = {
       // TODO: ERR msg / handling
       if (msg === null) return;
       let timeoutID = setTimeout(() => {
+        msg.reactions.cache.find(reaction => reaction.emoji.name === '\u{1F50C}')?.remove();
         msg.reply({ content: `<@${interaction.user.id}>`});
       }, globalTimer);
 
