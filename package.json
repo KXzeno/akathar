@@ -6,7 +6,7 @@
   "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "npx tsx deploy-commands.ts && npx tsx index.ts"
+    "deploy": "npx tsx deploy-commands.ts && npx tsx watch index.ts"
   },
   "author": "Kx",
   "license": "ISC",
