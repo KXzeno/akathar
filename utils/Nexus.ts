@@ -4,7 +4,7 @@
 // TODO: Remove outbound initial reply
 // TODO: Rate limit and only allow one session
 
-import {  ChatInputCommandInteraction, Collection, Guild, Message, MessageCollector, PermissionsBitField, TextChannel } from 'discord.js';
+import {  ChatInputCommandInteraction, Collection, Guild, InteractionResponse, Message, MessageCollector, PermissionsBitField, TextChannel } from 'discord.js';
 
 import { event as guildFetch } from '../events/guildFetch.ts';
 import { WebhookManager } from './index.ts';
@@ -62,7 +62,7 @@ export class Nexus {
     return this.inboundCollector = new MessageCollector(this.targetChannel);
   }
 
-  public static fetchGuilds(): GuildData[] {
+  public static async fetchGuilds(): Promise<GuildData[]> {
     return guildFetch.guildData;
   }
 
@@ -170,6 +170,24 @@ export class Nexus {
       return this.targetGuild = guild;
     } else {
       throw new Error(`Unable to locate guild: ${this.guildInput}`);
+    }
+  }
+
+  public async validateGuild(): Promise<Guild | void> {
+    if (this.targetGuild === null) {
+      throw new Error('Guild target failed to initialize');
+    }
+    if (this.interaction.guild === null) {
+      throw new Error('Sender guild failed to initialize');
+    }
+
+    if (this.interaction.guild.name.toLowerCase() === this.targetGuild.name.toLowerCase()) {
+      let reply = await this.interaction.reply({ content: `Cannot connect to your own guild.\n-# Deleting <t:${Math.ceil(new Date().getTime() / 1000) + 5}:R>`});
+      setTimeout(() => reply.delete(), 5000);
+      throw new Error('A connection is sent to the same guild.');
+    } else {
+      console.log('Guild accessible.');
+      return this.sourceChannel.guild;
     }
   }
 
