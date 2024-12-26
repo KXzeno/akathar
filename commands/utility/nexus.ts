@@ -26,6 +26,12 @@ export const command = {
 		let reason = interaction.options.getString('reason') || null;
 
 		let nexus = new Nexus(interaction, guildInput, reason);
+		try {
+			await nexus.validateGuild();
+		} catch (err) {
+			console.error(err);
+			return;
+		}
 		let targetChannel = nexus.getChannelTarget();
 
 		if (targetChannel) {
