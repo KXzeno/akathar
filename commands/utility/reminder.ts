@@ -10,7 +10,7 @@ export const command = {
   data: new SlashCommandBuilder()
   .setName('reminder')
   .setDescription('set a reminder with a description at a specified time')
-  .addStringOption(timer => timer.setName('timer').setDescription('compliant inputs are interpreted and compiled to ISO 8601: P[n]DT[n]H[n]M[n]S[n]').setRequired(true))
+  .addStringOption(timer => timer.setName('timer').setDescription('ISO8601 compliant (e.g., 3d 2m 1s, 30m60s, 700s 1d').setRequired(true))
   .addStringOption(desc => desc.setName('description').setDescription('the reminder')),
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.channel) return;
@@ -29,7 +29,7 @@ export const command = {
 
     // 'content' fallback
     if (content === null) {
-      content = 'None.'
+      content = 'None'
     }
 
     if (hasTimeTable && interaction.guild && content) {
@@ -37,13 +37,16 @@ export const command = {
       if (targetChannel === null) {
         return interaction.reply("Something went wrong with finding the timetable...");
       }
-
-      let globalTimer = Timer.parseInputToISO(timer);
-      if (typeof globalTimer !== 'number') {
-        throw new Error('Timer failed to construct.');
+      let globalTimer: Timer | null = null
+      try {
+        globalTimer = new Timer(timer);
+      } catch (err) {
+        console.error(err);
+        return interaction.reply({ content: `Timer failed to construct: ${timer}\n-# Make sure the delimiters are letters`, ephemeral: true });
       }
+
       // TODO: CONFIGURE TIMETABLE TERMINATION EMOJI AND STATUS
-      let msgRef = await targetChannel.send(`### ${interaction.user.displayName}'s reminder: \`${content}\`\n${Timer.createTimer(globalTimer)}\n-# WARNING: THIS FEATURE IS UNSTABLE, CURRENTLY ONLY SUPPORTS THE REGEX PATTERN: [DIGITS]m (e.g., 20m)`);
+      let msgRef = await targetChannel.send(`### ${interaction.user.displayName}'s reminder: \`${content}\`\n${globalTimer.getTimerString()})`);
       msgRef.react('✅');
 
       interaction.reply(`Reminder sent to <#${timetableChannelId}>`);
@@ -52,15 +55,18 @@ export const command = {
       setTimeout(() => {
         // targetChannel already checked
         targetChannel!.send({ content: `<@${interaction.user.id}>`, reply: { messageReference: msgRef.id }});
-      }, globalTimer);
+      }, globalTimer.getTimerMs());
     } else {
       // TODO: CONFIGURE STATUS
-      let globalTimer = Timer.parseInputToISO(timer);
-      if (typeof globalTimer !== 'number') {
-        throw new Error('Timer failed to construct.');
+      let globalTimer: Timer | null = null
+      try {
+        globalTimer = new Timer(timer);
+      } catch (err) {
+        console.error(err);
+        return interaction.reply({ content: `Timer failed to construct: ${timer}\n-# Make sure the delimiters are letters`, ephemeral: true });
       }
 
-      let msgRef = await interaction.reply({ content: `### ${interaction.user.displayName}'s reminder: \`${content}\`\n${Timer.createTimer(globalTimer)}\n-# WARNING: THIS FEATURE IS UNSTABLE, CURRENTLY ONLY SUPPORTS THE REGEX PATTERN: [DIGITS]m`, fetchReply: true});
+      let msgRef = await interaction.reply({ content: `### ${interaction.user.displayName}'s reminder: \`${content}\`\n${globalTimer.getTimerString()}`, fetchReply: true});
       msgRef.react('\u{1F50C}');
 
       let msg = await interaction.fetchReply();
@@ -69,11 +75,11 @@ export const command = {
       let timeoutID = setTimeout(() => {
         msg.reactions.cache.find(reaction => reaction.emoji.name === '\u{1F50C}')?.remove();
         msg.reply({ content: `<@${interaction.user.id}>`});
-      }, globalTimer);
+      }, globalTimer.getTimerMs());
 
       let collector: ReactionCollector = new ReactionCollector(msgRef, { filter: (reaction: MessageReaction, user: User) => {
         return reaction.emoji.name === '\u{1F50C}' && !user.bot;
-      }, time: globalTimer});
+      }, time: globalTimer.getTimerMs()});
 
       collector.on('collect', (reaction, user) => {
         if (user.id !== interaction.user.id) {
