@@ -16,7 +16,7 @@ export const command = {
 		if (userOpt) {
 			let user = interaction.guild.members.cache.find(user => user.id === userOpt.id);
 			if (user && isGuild) {
-				return (interaction.channel as TextChannel).send(user.displayAvatarURL({ extension: 'png', size: 1_024 }));
+				return interaction.reply(user.displayAvatarURL({ extension: 'png', size: 1_024 }));
 			}
 			let avatarUrl = userOpt.displayAvatarURL({ extension: 'png', size: 1_024 });
 			interaction.reply(avatarUrl);
